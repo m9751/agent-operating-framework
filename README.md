@@ -2,6 +2,14 @@
 
 A battle-tested operating framework for AI coding agents — born from production failures, not theory.
 
+## Who This Is For
+
+You've set up CLAUDE.md. You've built a few skills. You're using Projects Memory. But outputs are still inconsistent, the agent ignores rules under pressure, and you're manually reviewing everything.
+
+This framework is the next step. It adds enforcement (rules that can't be ignored), circuit breakers (stop after 3 failures), and an escalation model (advice → law → barriers) that makes your CLAUDE.md actually stick.
+
+If you're just getting started with Claude Code, read the beginner guides first. If you've hit the wall where your CLAUDE.md "stops working," [start here](guides/from-beginner-to-framework.md).
+
 ## What This Is
 
 A behavioral operating system that makes AI coding agents (Claude Code, Cursor, Copilot, etc.) more reliable. It combines:
@@ -31,6 +39,7 @@ See [guides/getting-started.md](guides/getting-started.md) for the full adoption
 - **[AGENT_FRAMEWORK.md](AGENT_FRAMEWORK.md)** — The complete framework (v1.1). Use as your project's CLAUDE.md.
 
 ### Guides
+- **[From Beginner to Framework](guides/from-beginner-to-framework.md)** — You've built CLAUDE.md and skills but outputs are inconsistent. Here's why and what to do next.
 - **[Getting Started](guides/getting-started.md)** — How to adopt the framework, where files go, recommended path
 - **[Enforcement Architecture](guides/enforcement-architecture.md)** — Memory → Rules → Hooks escalation model with examples
 - **[Why Post-Failure Frameworks Win](guides/why-post-failure.md)** — Why rules born from incidents beat rules born from best-practice lists
