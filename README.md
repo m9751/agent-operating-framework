@@ -4,59 +4,98 @@ A battle-tested operating framework for AI coding agents — born from productio
 
 ## What This Is
 
-A set of behavioral rules that make AI coding agents (Claude Code, Cursor, Copilot, etc.) more reliable. It combines:
+A behavioral operating system that makes AI coding agents (Claude Code, Cursor, Copilot, etc.) more reliable. It combines:
 
-- **Workflow orchestration** — plan mode, subagents, autonomous bug fixing
+- **Project identity** — role, output contracts, quality criteria, session lifecycle
 - **Evidence-first culture** — read before acting, show research, no guessing
-- **Circuit breakers** — three-failure stop, process before execution
+- **Circuit breakers** — three-failure stop, scope control, collaboration model
 - **Quality gates** — verification before done, post-delivery checklist
-- **Self-improvement** — capture lessons, escalate repeated failures to enforced rules
+- **Self-improvement** — capture lessons, enforce with memory → rules → hooks
+
+Every rule exists because its absence caused a specific, documented failure.
 
 ## Quick Start
 
-### Option 1: Use as a CLAUDE.md
-Copy `AGENT_FRAMEWORK.md` to your project root as `CLAUDE.md`. Claude Code will read it at session start.
+Copy `AGENT_FRAMEWORK.md` to your project root as `CLAUDE.md`. Fill in Section 0 with your project specifics. Start a session.
 
-### Option 2: Use as individual rules
-Copy files from `examples/claude-code-rules/` to `~/.claude/rules/` for global enforcement, or to your project's `.claude/rules/` for project-scoped rules.
+```bash
+cp AGENT_FRAMEWORK.md /path/to/your/project/CLAUDE.md
+```
 
-### Option 3: Cherry-pick
-Read `AGENT_FRAMEWORK.md` and adopt the sections that match your pain points.
+See [guides/getting-started.md](guides/getting-started.md) for the full adoption path.
 
-## Files
+## Library Contents
+
+### The Framework
+- **[AGENT_FRAMEWORK.md](AGENT_FRAMEWORK.md)** — The complete framework (v1.1). Use as your project's CLAUDE.md.
+
+### Guides
+- **[Getting Started](guides/getting-started.md)** — How to adopt the framework, where files go, recommended path
+- **[Enforcement Architecture](guides/enforcement-architecture.md)** — Memory → Rules → Hooks escalation model with examples
+- **[Why Post-Failure Frameworks Win](guides/why-post-failure.md)** — Why rules born from incidents beat rules born from best-practice lists
+
+### Copy-Paste Rules
+Individual rule files for `~/.claude/rules/` or `.claude/rules/`:
+
+| Rule | What It Prevents |
+|------|-----------------|
+| [read-before-acting.md](examples/claude-code-rules/read-before-acting.md) | Guessing instead of reading — the #1 agent failure mode |
+| [three-failure-stop.md](examples/claude-code-rules/three-failure-stop.md) | Brute-forcing failures instead of researching |
+| [process-before-execution.md](examples/claude-code-rules/process-before-execution.md) | Skipping the process because "it's faster to just do it" |
+| [scope-control.md](examples/claude-code-rules/scope-control.md) | Over-engineering, unrequested features, premature abstractions |
+| [session-lifecycle.md](examples/claude-code-rules/session-lifecycle.md) | Cold starts and sessions that end without auditing delivery |
+| [dependency-awareness.md](examples/claude-code-rules/dependency-awareness.md) | Breaking downstream code by not checking what depends on a change |
+
+## Framework Structure (v1.1)
 
 ```
-AGENT_FRAMEWORK.md              <- The full framework (use as CLAUDE.md)
-examples/
-  claude-code-rules/
-    read-before-acting.md       <- 4-gate universal rule: read before you touch
-    three-failure-stop.md       <- Stop after 3 failures, research instead
-    process-before-execution.md <- Follow the process, even when it feels slow
+Section 0: Project Identity      — WHO you are and WHAT good looks like
+  0.1 Role Declaration
+  0.2 Output Contract
+  0.3 Quality Criteria
+  0.4 Boundaries
+  0.5 Session Lifecycle
+  0.6 Communication Standards
+
+Section 1: Workflow Orchestration — HOW you work
+  1.1 Plan Mode Default
+  1.2 Subagent Strategy
+  1.3 Autonomous Bug Fixing
+  1.4 Tool Hierarchy
+
+Section 2: Evidence-First Culture — WHAT you read before acting
+  2.1 Read Before Acting
+  2.2 Show Research
+  2.3 First-Time Gate
+  2.4 No-Guess Policy
+  2.5 Dependency Awareness
+
+Section 3: Circuit Breakers       — WHEN to stop
+  3.1 Three-Failure Stop
+  3.2 Process Before Execution
+  3.3 Scope Control
+  3.4 Collaboration Model
+
+Section 4: Quality Gates          — HOW you verify
+Section 5: Self-Improvement Loop  — HOW you learn
+Section 6: Task Management        — HOW you track
+Section 7: Core Principles        — WHY it all matters
 ```
 
 ## The Key Insight
 
 Most agent failures come from the same root cause: **acting without reading.** The agent guesses a column name instead of checking the schema. It deploys with assumed config instead of reading the setup guide. It tries a fourth variation of a broken approach instead of stopping to research.
 
-The framework's core principle: **one read is worth ten guesses.**
+This framework's core principle: **one read is worth ten guesses.**
 
-## Enforcement Architecture
+## Contributing
 
-Rules alone aren't enough. The framework includes an escalation model:
+Have a rule born from a real production failure? Open a PR. Include:
+- The rule itself
+- "Why This Exists" with the date and cost of the failure
+- What it prevents
 
-```
-Memory (advice) → Rules (law) → Hooks (barriers)
-```
-
-- **Memory**: soft guidance the agent reads at session start
-- **Rules**: hard constraints loaded before every action
-- **Hooks**: automated gates that block tool execution
-
-If the same mistake happens twice despite a memory entry, promote it to a rule. If a rule gets ignored, promote it to a hook.
-
-## Origin
-
-This framework was developed through real production work — MuleSoft deployments, Supabase queries, campaign systems, and infrastructure management. Every rule exists because its absence caused a specific, documented failure. The "Why This Exists" sections in each rule file link to the incidents that created them.
+Rules without incident reports are less likely to be merged — they're advice, not enforcement.
 
 ## License
 
