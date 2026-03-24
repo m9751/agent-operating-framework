@@ -10,14 +10,14 @@
 - "Follow the project's coding style"
 
 **Post-failure frameworks** encode the cost of specific mistakes:
-- "Read the config file before deploying — because guessing the port cost 8 hours on 2026-03-21"
-- "Stop after 3 failures — because 5+ retries at 11pm burned an entire session on the wrong hypothesis"
+- "Read the config file before deploying — because guessing the port cost 8 hours"
+- "Stop after 3 failures — because 5+ retries burned an entire session on the wrong hypothesis"
 - "Check what depends on a file before deleting it — because removing a function broke 3 downstream imports"
 
 ## Why Post-Failure Rules Stick
 
 A pre-failure rule says: "Be careful when deploying."
-A post-failure rule says: "Read config.properties, verify http.port=8081, check for duplicate HTTP listeners. Why: wrong port + second listener crashed CloudHub. Cost: 10 rapid deploy cycles, 8 hours wasted."
+A post-failure rule says: "Read the config file, verify the port setting, check for duplicate listeners. Why: wrong port + second listener crashed the deployment. Cost: 10 rapid deploy cycles, 8 hours wasted."
 
 The difference:
 - **Specificity.** Post-failure rules name the exact action, the exact check, the exact failure mode.
