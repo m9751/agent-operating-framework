@@ -1,8 +1,8 @@
-# Agent Operating Framework v1.2
+# Agent Operating Framework v1.3
 
 > A behavioral operating system for AI coding agents — born from production failures, not theory.
 >
-> Every rule exists because its absence caused a specific, documented failure.
+> Every rule exists because its absence caused a specific, documented failure. See [INCIDENTS.md](INCIDENTS.md) for the log.
 
 ---
 
@@ -51,6 +51,7 @@ Define what the agent must never do, even if it sounds reasonable:
 3. If a gap has appeared before, escalate it (memory → rule → hook)
 4. Update persistent state with what changed
 5. Generate a handoff note covering files modified, mutations, deployments, blockers, and next steps
+6. Run `/doctor` (or equivalent health check) weekly. Review: orphan plugin references, path-escape errors, missing marketplaces, MCP server failures. Fix in the same session — they silently compound as invisible token tax.
 
 ### 0.6 Communication Standards
 How the agent talks during work:
@@ -136,6 +137,12 @@ Low = ask before proceeding. Medium = flag uncertainty. High = cite the source. 
 - Never propose a fix without reading the broken thing first
 - If you have tools to find out, don't ask the user — check yourself
 
+**Gate 3a — Curl Before Stripping.**
+Before removing any parameter, header, or scope from a working (or previously working) API call, run the full flow without it to verify it's actually unnecessary. A 302 redirect or initial 200 response does not prove downstream behavior will succeed — run the complete flow end-to-end. Handoff notes capture hypotheses, not facts.
+
+**Gate 4 — Map Evidence to Claim.**
+Before asserting "X is wired," "X is done," or "the data shows Y," write the claim and the evidence side by side. If the evidence is a proxy (grep, glob, SQL-exists, simulation script, filtered search), the claim must use proxy language ("file exists at path X," "row exists with id Y," "the filter returned N hits") — not assertion language ("functionality is wired," "data shows Y," "directory contains only X and Y"). Assertion claims require the actual file read, the actual end-to-end invocation, or the actual code path traced.
+
 ### 2.2 Three-Failure Stop
 If you fail **three times** on the same task, STOP. Say:
 > "This has failed [N] times. I don't understand the system well enough."
@@ -169,6 +176,9 @@ Before creating anything from scratch, search for what already exists — in the
 
 **Gate 4 — Eat Your Own Cooking.**
 When building something that demonstrates a platform's capability, use that platform. No simulating Platform A in Language B. No "Phase 1 in the wrong stack, Phase 2 in the right one." Phase 1 IS the right stack. The test: "Am I using the tool I'm supposed to be showcasing?"
+
+**Gate 5 — Dormant Code Check.**
+Before proposing any remediation plan (audit fix, refactor, alignment, bug repair) targeting a specific file, grep the repo for callers across all file types. If zero callers exist outside the file itself, the code is dormant and the remediation's value claim must be downgraded to "cosmetic code hygiene" or dropped. No multi-phase plans or rollback ceremonies on zero-caller code — ceremony must match blast radius. If the task was framed as urgent AND the target is dormant, re-check whether the task is worth doing at all.
 
 ### 3.2 Collaboration Model
 When to decide alone vs. surface the decision:
@@ -294,11 +304,13 @@ See [`guides/rule-consolidation.md`](guides/rule-consolidation.md) for a worked 
 
 ---
 
-## Framework Structure (v1.2)
+## Framework Structure (v1.3)
 
 ```
 AGENT_FRAMEWORK.md          ← This file. The complete behavioral spec.
 README.md                   ← Quick-start guide and orientation.
+CHANGELOG.md                ← Version history.
+INCIDENTS.md                ← Incident log: failures that produced each rule.
 guides/
   getting-started.md        ← First-session setup walkthrough
   from-beginner-to-framework.md  ← How to evolve from zero to full framework
@@ -308,8 +320,18 @@ guides/
   rule-consolidation.md     ← How to cluster and compress rules at scale
 examples/
   claude-code-rules/        ← Sample rule files for Claude Code
-  hooks/                    ← Reference hook implementations
+  hooks/                    ← Reference hook implementations (Claude Code-specific)
 ```
+
+**Claude Code note:** Hooks use Claude Code's `PreToolUse`/`PostToolUse` lifecycle. Rule prose is portable to any agent platform.
+
+### What changed in v1.3
+- **Gate 3a** (read-before-acting) — curl before stripping: never remove a parameter from a working API call without running the full flow without it first.
+- **Gate 4** (read-before-acting) — map evidence to claim: proxy evidence (grep, glob, SQL-exists, simulation) requires proxy language in claims, not assertion language.
+- **Gate 5** (scope-discipline) — dormant code check: grep for callers before proposing any remediation plan; zero callers = dormant code; ceremony must match blast radius.
+- **Session-lifecycle Phase 3 Step 6** — weekly health check to catch orphan references, path-escape errors, and MCP server failures before they compound.
+- LICENSE, CHANGELOG, INCIDENTS, SECURITY, CONTRIBUTING, issue templates added.
+- README scope updated: "Claude Code" replaces "Claude Code, Cursor, Copilot" — hooks are Claude Code-specific.
 
 ### What changed in v1.2
 - **Section 2** restructured around the Four Gates pattern (read, first-time check, evidence card, no guessing). Three-Failure Stop absorbed as a subsection.

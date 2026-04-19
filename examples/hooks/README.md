@@ -1,5 +1,7 @@
 # Hook Examples
 
+> **Platform:** These hooks use Claude Code's `PreToolUse`/`PostToolUse` lifecycle. They are written for bash on macOS/Linux/WSL. They will not work natively on Windows CMD/PowerShell — use WSL2 or adapt the shell syntax accordingly.
+
 Production-quality hook scripts for enforcing agent discipline at the tool-call level. These hooks run as shell scripts before (or after) the agent invokes a tool, giving you a programmatic enforcement layer that supplements rule files.
 
 ## What Are Hooks?

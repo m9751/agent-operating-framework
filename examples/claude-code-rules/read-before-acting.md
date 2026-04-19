@@ -13,6 +13,10 @@ Before modifying, querying, deploying, or fixing anything: read the thing first.
 
 **Gate 3 — No guessing.** Never guess column names, property keys, CLI flags, config values, or filenames. If a tool exists to check (`--help`, `information_schema.columns`, `curl`, `ls`), use it — don't ask the user.
 
+**Gate 3a — Curl before stripping.** Before removing any parameter, header, or scope from a working (or previously working) API call, run the full flow without it to verify it's actually unnecessary. A 302 redirect or initial 200 does not prove downstream behavior will succeed — run the complete flow end-to-end. Handoff notes capture hypotheses, not facts.
+
+**Gate 4 — Map evidence to claim.** Before asserting "X is wired," "X is done," or "the data shows Y," write the claim and the evidence side by side. If the evidence is a proxy (grep, glob, SQL-exists, simulation script, filtered search), the claim must use proxy language ("file exists at path X," "row exists with id Y," "filter returned N hits") — not assertion language ("functionality is wired," "directory contains only X and Y"). Assertion claims require the actual file Read, the actual end-to-end invocation, or the actual code path traced.
+
 ## Escalation: Three-Failure Stop
 If the same task fails 3 times, halt. Say out loud: "This has failed 3 times. I don't understand this system well enough." State what you tried and why each attempt failed. Do not try a 4th variation. Research, then retry with evidence.
 

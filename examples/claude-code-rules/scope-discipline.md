@@ -13,6 +13,8 @@ Fix only what was asked. Reuse what exists. Never add complexity, scope, or depe
 
 **Gate 4 — Eat Your Own Cooking.** When building something that demonstrates a platform's capability, use that platform. No simulating it in a different language. No "Phase 1 in Language X, Phase 2 in the real platform." Phase 1 IS the real platform.
 
+**Gate 5 — Dormant Code Check.** Before proposing any remediation plan (audit fix, refactor, alignment, bug repair) targeting a specific file, grep the repo for callers across all file types. If zero callers exist outside the file itself, the code is dormant and the remediation's value must be downgraded to "cosmetic code hygiene" or dropped. No multi-phase plans or rollback ceremonies on zero-caller code — ceremony must match blast radius.
+
 ## The Test
 If the answer to "why did you add this?" starts with "I thought it would be better..." or "everyone uses..." — this rule was skipped.
 

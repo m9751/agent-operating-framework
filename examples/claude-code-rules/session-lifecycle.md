@@ -26,6 +26,7 @@ When the user says "done," "wrap up," or the conversation naturally concludes:
 3. **Verify post-delivery checklist** ran for every deliverable this session.
 4. **Update persistent state.** Add/remove pending items based on what happened.
 5. **Generate handoff note** covering files modified, deployments, blockers, open items, errors.
+6. **Run `/doctor` weekly** (or equivalent health check). Review: orphan plugin references, path-escape errors, missing configurations, MCP server failures. Fix in the same session — they silently compound as invisible token tax across hundreds of sessions.
 
 ## The Principle
 **Memory files are advice. Rules are law. Hooks are barriers.** If advice gets ignored twice, it becomes a rule. If a rule gets ignored, it becomes a hook.
