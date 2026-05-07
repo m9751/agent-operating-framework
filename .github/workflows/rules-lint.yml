@@ -19,9 +19,27 @@ jobs:
         with:
           fetch-depth: 1
 
-      - name: Skeleton placeholder
+      - name: Hook fail-mode + blast-radius annotation check
         run: |
-          echo "rules-lint skeleton — Phase D will add hook fail-mode annotation checks."
-          echo "Phase G will add Done Criteria schema validation."
-          echo "Phase H will add empty-rule-body checks."
-          echo "Currently passes vacuously to establish the CI surface."
+          set -e
+          missing=0
+          for hook in examples/hooks/*.sh; do
+            if ! grep -qE "^# fail-mode: (closed|open)$" "$hook"; then
+              echo "::error file=$hook::missing '# fail-mode: closed|open' header annotation"
+              missing=1
+            fi
+            if ! grep -qE "^# blast-radius: (destructive|security|advisory)$" "$hook"; then
+              echo "::error file=$hook::missing '# blast-radius: destructive|security|advisory' header annotation"
+              missing=1
+            fi
+          done
+          if [ "$missing" -eq 1 ]; then
+            echo "::error::One or more hooks are missing required annotations. See AGENT_FRAMEWORK.md §5.2 for the taxonomy."
+            exit 1
+          fi
+          echo "All hooks have fail-mode + blast-radius annotations."
+
+      - name: Done Criteria + empty-rule-body placeholders
+        run: |
+          echo "Phase G will add Done Criteria schema validation here."
+          echo "Phase H will add empty-rule-body checks here."

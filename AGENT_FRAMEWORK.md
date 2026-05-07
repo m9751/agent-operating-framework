@@ -265,20 +265,32 @@ Memory (advice) → Rules (law) → Hooks (barriers)
 If the same mistake happens twice despite a memory entry, promote it to a rule.
 If a rule gets ignored, promote it to a hook.
 
-**Hooks** are the strongest enforcement tier — automated scripts that intercept tool calls and block execution when preconditions are not met. They run before the agent acts, not after. Examples: blocking database mutations without a prior read, blocking deployments without an Exchange search, blocking commits that include secret patterns. A hook is fail-safe by default: if it errors, it should allow the action (fail-open) rather than silently block work. See [`guides/enforcement-architecture.md`](guides/enforcement-architecture.md) for design patterns and [`examples/hooks/`](examples/hooks/) for reference implementations.
+**Hooks** are the strongest enforcement tier — automated scripts that intercept tool calls and block execution when preconditions are not met. They run before the agent acts, not after. Examples: blocking database mutations without a prior read, blocking deployments without an Exchange search, blocking commits that include secret patterns.
+
+**Fail mode by blast radius.** The naive default — "if a hook errors, allow the action" — is wrong for high-blast-radius operations. The control disappears exactly when the enforcement mechanism is unhealthy. Classify hooks by what they protect:
+
+| Blast radius | Default fail mode | Why |
+|---|---|---|
+| **destructive** (mutates state, deploys, deletes, writes infrastructure) | **fail-closed** | a fail-open destructive hook teaches the agent that broken guardrails are the same as no guardrails — exactly the wrong lesson before high-stakes actions |
+| **security** (secrets, auth, credentials, protected configs) | **fail-closed** | the cost of a leaked secret strictly dominates the cost of a paused tool call |
+| **advisory** (logging hints, breadcrumbs, "did you remember to…") | **fail-open** | these hooks shape habit, not safety; failing them shouldn't block work |
+
+Every shipped hook in `examples/hooks/` carries `# fail-mode:` and `# blast-radius:` header annotations matching this taxonomy; CI rejects hooks added without them (see `rules-lint.yml`). When you author a new hook, declare both before writing logic.
+
+See [`guides/enforcement-architecture.md`](guides/enforcement-architecture.md) for design patterns and [`examples/hooks/`](examples/hooks/) for reference implementations.
 
 ### 5.3 Rule-to-Hook Coverage
 
 The escalation ladder above (memory → rule → hook) is aspirational — not every rule has a hook backing it, and the framework does not pretend otherwise. The matrix below is the honest accounting of what ships in v1.4:
 
-| Rule | Hook | Fail mode | Coverage |
-|---|---|---|---|
-| [`read-before-acting`](examples/claude-code-rules/read-before-acting.md) | [`read-gate.sh`](examples/hooks/read-gate.sh) | *see §5.4* | enforced |
-| [`scope-discipline`](examples/claude-code-rules/scope-discipline.md) | [`search-gate.sh`](examples/hooks/search-gate.sh) (Gates 2–3) | *see §5.4* | partially enforced — Gates 2–3 hook-backed; Gates 1, 4, 5 advisory |
-| [`delivery-protocol`](examples/claude-code-rules/delivery-protocol.md) | [`delivery-gate.sh`](examples/hooks/delivery-gate.sh) (Step 5) | *see §5.4* | enforced |
-| [`session-lifecycle`](examples/claude-code-rules/session-lifecycle.md) | — | — | advisory |
-| [`secure-configuration`](examples/claude-code-rules/secure-configuration.md) | — | — | advisory |
-| [`no-local-infrastructure`](examples/claude-code-rules/no-local-infrastructure.md) | — | — | advisory (decision framework) |
+| Rule | Hook | Fail mode | Blast radius | Coverage |
+|---|---|---|---|---|
+| [`read-before-acting`](examples/claude-code-rules/read-before-acting.md) | [`read-gate.sh`](examples/hooks/read-gate.sh) | closed | destructive | enforced |
+| [`scope-discipline`](examples/claude-code-rules/scope-discipline.md) | [`search-gate.sh`](examples/hooks/search-gate.sh) (Gates 2–3) | closed | destructive | partially enforced — Gates 2–3 hook-backed; Gates 1, 4, 5 advisory |
+| [`delivery-protocol`](examples/claude-code-rules/delivery-protocol.md) | [`delivery-gate.sh`](examples/hooks/delivery-gate.sh) (Step 5) | open | advisory | enforced (advisory by design — Step 5 is habit-shaping, not safety-critical) |
+| [`session-lifecycle`](examples/claude-code-rules/session-lifecycle.md) | — | — | — | advisory |
+| [`secure-configuration`](examples/claude-code-rules/secure-configuration.md) | — | — | — | advisory **(security gap — no auth/secrets hook ships in v1.4; tracked for v1.5)** |
+| [`no-local-infrastructure`](examples/claude-code-rules/no-local-infrastructure.md) | — | — | — | advisory (decision framework) |
 
 **Reading the matrix:**
 - **enforced** — a CI or `PreToolUse` hook blocks the action when the rule is violated
