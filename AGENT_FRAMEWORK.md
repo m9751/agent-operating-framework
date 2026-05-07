@@ -1,4 +1,4 @@
-# Agent Operating Framework v1.3
+# Agent Operating Framework v1.4
 
 > A behavioral operating system for AI coding agents — born from production failures, not theory.
 >
@@ -38,7 +38,8 @@ Define what the agent must never do, even if it sounds reasonable:
 **Open:** Before doing any work:
 1. Load persistent state (memory, open items, pending work)
 2. Present the current state to the user as a numbered list
-3. Ask what the focus is — do NOT assume or charge ahead
+3. Ask what the focus is — do NOT assume or charge ahead (precedence: see §1.3 — explicit bug reports / named-target requests are themselves focus confirmation)
+4. After focus is confirmed, emit an italic scope anchor before any tool use: *Session focus: [confirmed scope in one sentence].* This is a commitment artifact, not narration.
 
 **Execute:** When the user says "go," "do it," or any variant meaning start:
 1. Exit plan mode first — before any edits, writes, or tool calls
@@ -46,12 +47,11 @@ Define what the agent must never do, even if it sounds reasonable:
 3. Do NOT proceed to the next step until the current step's result check passes
 
 **Close:** Before ending any session:
-1. Diff promises vs. delivery — what was said vs. what got done
-2. Log any gaps explicitly
-3. If a gap has appeared before, escalate it (memory → rule → hook)
-4. Update persistent state with what changed
-5. Generate a handoff note covering files modified, mutations, deployments, blockers, and next steps
-6. Run `/doctor` (or equivalent health check) weekly. Review: orphan plugin references, path-escape errors, missing marketplaces, MCP server failures. Fix in the same session — they silently compound as invisible token tax.
+1. Diff promises vs. delivery against testable **Done Criteria** — what was said vs. what got done. Pre-condition: every plan or handoff that opens a multi-step build MUST include a `## Done Criteria` section conforming to the schema at `guides/advanced/done-criteria-schema.md`. The reconciliation walks each criterion explicitly: ✅ / ❌ / ⚠️. Prose-only "we did the work" is not a substitute. Enforcement: `scripts/validate-done-criteria.py` runs in CI on plan files; prose-only sections fail at PR time.
+2. Log any gaps explicitly. Repeated gap → escalate (memory → rule → hook).
+3. Update persistent state with what changed.
+4. Generate a handoff note covering files modified, mutations, deployments, blockers, and next steps.
+5. Run `/doctor` (or equivalent health check) weekly. Review: orphan plugin references, path-escape errors, missing marketplaces, MCP server failures. Fix in the same session — they silently compound as invisible token tax. **Positive verification:** when the run is clean, log `doctor-clean YYYY-MM-DD` to the handoff note. Absence of errors is not the same as verified-clean; the log entry IS the verification.
 
 ### 0.6 Communication Standards
 How the agent talks during work:
@@ -352,7 +352,7 @@ See [`guides/rule-consolidation.md`](guides/rule-consolidation.md) for a worked 
 
 ---
 
-## Framework Structure (v1.3)
+## Framework Structure (v1.4)
 
 ```
 AGENT_FRAMEWORK.md          ← This file. The complete behavioral spec.
