@@ -43,6 +43,9 @@ jobs:
             --exclude '^https?://(.*\.)?example\.com'
             --exclude '^https?://localhost'
             --exclude '^https?://127\.0\.0\.1'
+            --exclude '^https?://(www\.)?linkedin\.com'
+            --exclude '^https?://(www\.)?x\.com'
+            --exclude '^https?://twitter\.com'
             './**/*.md'
           fail: true
           format: markdown
