@@ -1,0 +1,52 @@
+name: doc-link-check
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '**/*.md'
+      - '.github/workflows/doc-link-check.yml'
+  push:
+    branches: [main]
+    paths:
+      - '**/*.md'
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  link-check:
+    name: Markdown link check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Restore lychee cache
+        uses: actions/cache@v4
+        with:
+          path: .lycheecache
+          key: cache-lychee-${{ github.sha }}
+          restore-keys: cache-lychee-
+
+      - name: Run lychee
+        uses: lycheeverse/lychee-action@v2
+        with:
+          args: >-
+            --no-progress
+            --cache
+            --max-cache-age 1d
+            --include-fragments
+            --exclude '^https?://(.*\.)?example\.com'
+            --exclude '^https?://localhost'
+            --exclude '^https?://127\.0\.0\.1'
+            --exclude '^https?://(www\.)?linkedin\.com'
+            --exclude '^https?://(www\.)?x\.com'
+            --exclude '^https?://twitter\.com'
+            './**/*.md'
+          fail: true
+          format: markdown
+          output: ./lychee-report.md
