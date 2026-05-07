@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# fail-mode: closed
+# blast-radius: destructive
 # =============================================================================
 # deprecated-field-gate.sh — PreToolUse hook
 #

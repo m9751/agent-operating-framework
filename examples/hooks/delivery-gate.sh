@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# fail-mode: open
+# blast-radius: advisory
 # =============================================================================
 # delivery-gate.sh — PreToolUse hook (advisory, fail-open)
 #
