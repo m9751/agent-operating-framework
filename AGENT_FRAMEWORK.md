@@ -307,7 +307,7 @@ The escalation ladder above (memory → rule → hook) is aspirational — not e
 - **partially enforced** — some gates of the rule are hook-backed; others are prose
 - **advisory** — the rule is documented but the agent can still ignore it; Layer 2 (law) without Layer 3 (barrier)
 
-Three rules ship without hooks (`session-lifecycle`, `secure-configuration`, `no-local-infrastructure`). That is a gap, not a feature. Adoption notes:
+Three rules ship without hooks. `session-lifecycle` and `secure-configuration` are gaps — the failure modes they describe are hookable (settings.xml protection, secrets-in-chat, focus-confirmation) and tracked for v1.5. `no-local-infrastructure` is advisory by design — it is a decision framework that routes to a hosting recommendation per context, not a single invariant a hook can check. Adoption notes:
 - If you adopt the framework expecting all rules to be system-enforced, this matrix is the reality check.
 - If you need stronger guarantees on the advisory rules, write your own `PreToolUse` hooks against your environment's specifics — the framework's hooks are reference implementations, not exhaustive coverage.
 
