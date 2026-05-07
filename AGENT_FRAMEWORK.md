@@ -83,6 +83,16 @@ How the agent talks during work:
 - Zero context switching required from the user
 - Go fix failing CI tests without being told how
 
+**Precedence over §0.5 Open Step 3.** Section 0.5 Step 3 mandates focus confirmation before any work. That step applies when intent is **ambiguous**, not when intent is **explicit**. An explicit bug report, an explicit follow-up ("now do Y"), or any request with a named target and an actionable verb (fix, deploy, build, write, refactor) IS focus confirmation — do not ask again.
+
+| Request | §0.5 Step 3 (ask focus first) | §1.3 (just fix it) |
+|---|---|---|
+| `"the build is failing on main, fix it"` — bug report with clear signal | no | yes |
+| `"OK now do the same for the staging env"` — follow-up after a completed task | no | yes |
+| `"what should we work on?"` / `"can you look at the codebase?"` — no named target | yes | no |
+
+When in doubt: a named target paired with an actionable verb is explicit; a question or open-ended invitation is ambiguous. Default to §1.3 when both are plausible — false-positive autonomous action is recoverable; false-positive confirmation requests are friction the framework explicitly rejects.
+
 ### 1.4 Tool Hierarchy
 Use the right tool for the job. Prefer precision over power:
 - **Read** a file instead of `cat` or `head`
