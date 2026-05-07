@@ -267,7 +267,33 @@ If a rule gets ignored, promote it to a hook.
 
 **Hooks** are the strongest enforcement tier — automated scripts that intercept tool calls and block execution when preconditions are not met. They run before the agent acts, not after. Examples: blocking database mutations without a prior read, blocking deployments without an Exchange search, blocking commits that include secret patterns. A hook is fail-safe by default: if it errors, it should allow the action (fail-open) rather than silently block work. See [`guides/enforcement-architecture.md`](guides/enforcement-architecture.md) for design patterns and [`examples/hooks/`](examples/hooks/) for reference implementations.
 
-### 5.3 Rule Consolidation
+### 5.3 Rule-to-Hook Coverage
+
+The escalation ladder above (memory → rule → hook) is aspirational — not every rule has a hook backing it, and the framework does not pretend otherwise. The matrix below is the honest accounting of what ships in v1.4:
+
+| Rule | Hook | Fail mode | Coverage |
+|---|---|---|---|
+| [`read-before-acting`](examples/claude-code-rules/read-before-acting.md) | [`read-gate.sh`](examples/hooks/read-gate.sh) | *see §5.4* | enforced |
+| [`scope-discipline`](examples/claude-code-rules/scope-discipline.md) | [`search-gate.sh`](examples/hooks/search-gate.sh) (Gates 2–3) | *see §5.4* | partially enforced — Gates 2–3 hook-backed; Gates 1, 4, 5 advisory |
+| [`delivery-protocol`](examples/claude-code-rules/delivery-protocol.md) | [`delivery-gate.sh`](examples/hooks/delivery-gate.sh) (Step 5) | *see §5.4* | enforced |
+| [`session-lifecycle`](examples/claude-code-rules/session-lifecycle.md) | — | — | advisory |
+| [`secure-configuration`](examples/claude-code-rules/secure-configuration.md) | — | — | advisory |
+| [`no-local-infrastructure`](examples/claude-code-rules/no-local-infrastructure.md) | — | — | advisory (decision framework) |
+
+**Reading the matrix:**
+- **enforced** — a CI or `PreToolUse` hook blocks the action when the rule is violated
+- **partially enforced** — some gates of the rule are hook-backed; others are prose
+- **advisory** — the rule is documented but the agent can still ignore it; Layer 2 (law) without Layer 3 (barrier)
+
+Three rules ship without hooks (`session-lifecycle`, `secure-configuration`, `no-local-infrastructure`). That is a gap, not a feature. Adoption notes:
+- If you adopt the framework expecting all rules to be system-enforced, this matrix is the reality check.
+- If you need stronger guarantees on the advisory rules, write your own `PreToolUse` hooks against your environment's specifics — the framework's hooks are reference implementations, not exhaustive coverage.
+
+**Meta-hooks** (not bound to a single rule):
+- [`deprecated-field-gate.sh`](examples/hooks/deprecated-field-gate.sh) — template for blocking writes that reference deprecated DB columns or API fields
+- [`empty-rule-body-gate.sh`](examples/hooks/empty-rule-body-gate.sh) — pre-merge CI check that rejects rule files with empty bodies *(added in v1.4 Phase H)*
+
+### 5.4 Rule Consolidation
 Rules accumulate naturally as lessons are captured. Left unchecked, they become unreadable — too many rules means none get followed. When the rule count grows past 15-20:
 
 1. **Cluster by root cause.** Many rules exist because of the same underlying failure pattern. Group them.
