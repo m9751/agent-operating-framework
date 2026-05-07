@@ -1,0 +1,27 @@
+name: rules-lint
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  rules-lint:
+    name: Rules + plans linting
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Skeleton placeholder
+        run: |
+          echo "rules-lint skeleton — Phase D will add hook fail-mode annotation checks."
+          echo "Phase G will add Done Criteria schema validation."
+          echo "Phase H will add empty-rule-body checks."
+          echo "Currently passes vacuously to establish the CI surface."
