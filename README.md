@@ -18,7 +18,7 @@ See [guides/getting-started.md](guides/getting-started.md) for the full adoption
 
 You've set up CLAUDE.md. You've built a few skills. You're using Projects Memory. But outputs are still inconsistent, the agent ignores rules under pressure, and you're manually reviewing everything.
 
-This framework is the next step. It adds enforcement (rules that can't be ignored), circuit breakers (stop after 3 failures), and an escalation model (advice → law → barriers) that makes your CLAUDE.md actually stick.
+This framework is the next step. It adds rules with documented enforcement contracts (some advisory by design), circuit breakers (stop after 3 failures), and an escalation model (advice → law → barriers) that makes your CLAUDE.md actually stick. See the [rule-to-hook coverage matrix](AGENT_FRAMEWORK.md#53-rule-to-hook-coverage) for what is system-enforced versus advisory in v1.4 — three of six rules ship with hooks; three are advisory by design and explicitly marked.
 
 If you're just getting started with Claude Code, read the beginner guides first. If you've hit the wall where your CLAUDE.md "stops working," [start here](guides/from-beginner-to-framework.md).
 
