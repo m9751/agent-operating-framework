@@ -291,7 +291,7 @@ Three rules ship without hooks (`session-lifecycle`, `secure-configuration`, `no
 
 **Meta-hooks** (not bound to a single rule):
 - [`deprecated-field-gate.sh`](examples/hooks/deprecated-field-gate.sh) — template for blocking writes that reference deprecated DB columns or API fields
-- [`empty-rule-body-gate.sh`](examples/hooks/empty-rule-body-gate.sh) — pre-merge CI check that rejects rule files with empty bodies *(added in v1.4 Phase H)*
+- `examples/hooks/empty-rule-body-gate.sh` — pre-merge CI check that rejects rule files with empty bodies *(planned for v1.4 Phase H — file not yet shipped)*
 
 ### 5.4 Rule Consolidation
 Rules accumulate naturally as lessons are captured. Left unchecked, they become unreadable — too many rules means none get followed. When the rule count grows past 15-20:
