@@ -18,16 +18,16 @@ Don't adopt everything at once. Start with what hurts most:
 Copy `examples/claude-code-rules/read-before-acting.md` to `~/.claude/rules/`
 
 ### If your agent brute-forces failures:
-Copy `examples/claude-code-rules/three-failure-stop.md` to `~/.claude/rules/`
+Copy `examples/claude-code-rules/read-before-acting.md` to `~/.claude/rules/` — the Three-Failure Stop escalation handles this.
 
 ### If your agent over-engineers or adds unrequested features:
-Copy `examples/claude-code-rules/scope-control.md` to `~/.claude/rules/`
+Copy `examples/claude-code-rules/scope-discipline.md` to `~/.claude/rules/`
 
 ### If sessions start cold with no context:
 Copy `examples/claude-code-rules/session-lifecycle.md` to `~/.claude/rules/`
 
 ### If changes break downstream dependencies:
-Copy `examples/claude-code-rules/dependency-awareness.md` to `~/.claude/rules/`
+Copy `examples/claude-code-rules/read-before-acting.md` to `~/.claude/rules/` — Gate 0 forces reading the resource before touching it; pair with `scope-discipline.md` Gate 5 (Dormant Code Check) for caller mapping.
 
 ## Where Rules Live
 
@@ -63,8 +63,7 @@ Your home directory:
 ~/.claude/
 ├── rules/
 │   ├── read-before-acting.md    ← Universal
-│   ├── three-failure-stop.md    ← Universal
-│   ├── scope-control.md         ← Universal
+│   ├── scope-discipline.md      ← Universal
 │   └── session-lifecycle.md     ← Universal
 └── projects/
     └── <project>/

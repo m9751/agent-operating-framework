@@ -4,6 +4,14 @@ All notable changes to this framework follow [Keep a Changelog](https://keepacha
 
 ---
 
+## [1.3.1] — 2026-05
+
+### Fixed
+- `guides/getting-started.md` — replaced 5 stale rule filenames (`three-failure-stop.md`, `scope-control.md`, `dependency-awareness.md`) with their consolidated targets (`read-before-acting.md`, `scope-discipline.md`). Onboarding adoption path now references files that exist.
+- `guides/from-beginner-to-framework.md` — replaced 3 stale rule filenames with their consolidated targets. Symptom-to-rule table and "Where to Start" list now route to live files.
+
+---
+
 ## [1.3] — 2026-04
 
 ### Added
