@@ -312,8 +312,8 @@ Three rules ship without hooks. `session-lifecycle` and `secure-configuration` a
 - If you need stronger guarantees on the advisory rules, write your own `PreToolUse` hooks against your environment's specifics — the framework's hooks are reference implementations, not exhaustive coverage.
 
 **Meta-hooks** (not bound to a single rule):
-- [`deprecated-field-gate.sh`](examples/hooks/deprecated-field-gate.sh) — template for blocking writes that reference deprecated DB columns or API fields
-- `examples/hooks/empty-rule-body-gate.sh` — pre-merge CI check that rejects rule files with empty bodies *(planned for v1.4 Phase H — file not yet shipped)*
+- [`deprecated-field-gate.sh`](examples/hooks/deprecated-field-gate.sh) — template for blocking writes that reference deprecated DB columns or API fields *(fail-mode: closed, blast-radius: destructive)*
+- [`empty-rule-body-gate.sh`](examples/hooks/empty-rule-body-gate.sh) — pre-merge CI check that rejects rule files with empty bodies (< 200 bytes) or missing `## Why` sections *(fail-mode: closed, blast-radius: security — protects framework integrity against false-positive "applied" claims)*
 
 ### 5.4 Rule Consolidation
 Rules accumulate naturally as lessons are captured. Left unchecked, they become unreadable — too many rules means none get followed. When the rule count grows past 15-20:

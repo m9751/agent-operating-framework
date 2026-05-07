@@ -70,6 +70,29 @@ jobs:
           echo "$changed" | sed 's/^/  - /'
           python scripts/validate-done-criteria.py $changed
 
-      - name: Empty-rule-body placeholder
+      - name: Empty-rule-body gate self-test
         run: |
-          echo "Phase H will add empty-rule-body checks here."
+          set -e
+          # Real rules must all pass
+          bash examples/hooks/empty-rule-body-gate.sh examples/claude-code-rules/*.md
+          # Synthetic stub must fail (we expect non-zero, so invert)
+          tmpdir=$(mktemp -d)
+          echo "# Empty stub" > "$tmpdir/stub.md"
+          if bash examples/hooks/empty-rule-body-gate.sh "$tmpdir/stub.md" 2>/dev/null; then
+            echo "::error::empty-rule-body-gate did not reject the synthetic stub"
+            exit 1
+          fi
+          echo "Empty-rule-body gate self-test passed: real rules accepted, stub rejected."
+
+      - name: Empty-rule-body gate on changed rule files
+        run: |
+          set -e
+          # Find rule files added/modified in this PR.
+          changed=$(git diff --name-only --diff-filter=AM "${{ github.event.pull_request.base.sha || github.event.before }}" HEAD -- 'examples/claude-code-rules/**/*.md' 2>/dev/null || true)
+          if [ -z "$changed" ]; then
+            echo "No rule files added/modified in this PR — skipping per-file check."
+            exit 0
+          fi
+          echo "Checking changed rule files:"
+          echo "$changed" | sed 's/^/  - /'
+          bash examples/hooks/empty-rule-body-gate.sh $changed
