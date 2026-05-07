@@ -39,7 +39,37 @@ jobs:
           fi
           echo "All hooks have fail-mode + blast-radius annotations."
 
-      - name: Done Criteria + empty-rule-body placeholders
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Done Criteria validator self-test (fixtures)
         run: |
-          echo "Phase G will add Done Criteria schema validation here."
+          set -e
+          # Good fixture: must pass
+          python scripts/validate-done-criteria.py scripts/fixtures/good-plan.md
+          # Bad fixture: must fail (we expect non-zero exit, so invert it)
+          if python scripts/validate-done-criteria.py scripts/fixtures/bad-plan.md 2>/dev/null; then
+            echo "::error::Validator did not reject the bad-plan fixture — schema enforcement is broken"
+            exit 1
+          fi
+          echo "Validator self-test passed: good fixture accepted, bad fixture rejected."
+
+      - name: Done Criteria schema validation
+        run: |
+          set -e
+          # Find any plan files added or modified in this PR.
+          # Plans live under plans/ at the repo root or examples/plans/.
+          changed=$(git diff --name-only --diff-filter=AM "${{ github.event.pull_request.base.sha || github.event.before }}" HEAD -- 'plans/**/*.md' 'examples/plans/**/*.md' 2>/dev/null || true)
+          if [ -z "$changed" ]; then
+            echo "No plan files added/modified in this PR — skipping Done Criteria validation."
+            exit 0
+          fi
+          echo "Validating Done Criteria in:"
+          echo "$changed" | sed 's/^/  - /'
+          python scripts/validate-done-criteria.py $changed
+
+      - name: Empty-rule-body placeholder
+        run: |
           echo "Phase H will add empty-rule-body checks here."
