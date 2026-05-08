@@ -4,6 +4,31 @@ All notable changes to this framework follow [Keep a Changelog](https://keepacha
 
 ---
 
+## [1.4] — 2026-05
+
+### Added
+- **`.github/workflows/doc-link-check.yml`** — CI link-checker (lychee) on every PR + push to main. Catches broken internal/external doc links before merge.
+- **`.github/workflows/rules-lint.yml`** — CI rules + plans linter. Enforces hook fail-mode + blast-radius annotations, runs Done Criteria schema validator, runs empty-rule-body gate.
+- **`AGENT_FRAMEWORK.md` §5.3 Rule-to-Hook Coverage** — 6-row matrix mapping each rule to its hook (or marking it advisory). Honest 3-of-6 enforced ratio. Existing §5.3 (Rule Consolidation) renumbered §5.4.
+- **`AGENT_FRAMEWORK.md` §5.2 fail-mode taxonomy** — destructive / security / advisory blast-radius classification with rationale per tier.
+- **`AGENT_FRAMEWORK.md` §1.3 precedence rule** — explicit precedence over §0.5 Step 3, with 3 worked examples (bug report → fix; follow-up → do; ambiguous → ask).
+- **`AGENT_FRAMEWORK.md` §0.5 Phase 1 Step 4** — italic scope-anchor commitment artifact emitted between focus confirmation and first tool use.
+- **`AGENT_FRAMEWORK.md` §0.5 Phase 3 Step 1** — Done Criteria pre-condition referencing `done-criteria-schema.md` + the validator.
+- **`AGENT_FRAMEWORK.md` §0.5 Phase 3 Step 5** — `doctor-clean YYYY-MM-DD` positive verification log entry.
+- **`scripts/validate-done-criteria.py`** + **`scripts/fixtures/{good,bad}-plan.md`** — Python validator that enforces the Done Criteria schema in CI. Tested on 3 inputs; all match expected outcomes.
+- **`guides/advanced/done-criteria-schema.md`** — schema spec with verb whitelist (9 verbs), good/bad examples, validator behavior.
+- **`examples/hooks/empty-rule-body-gate.sh`** — CI meta-hook that rejects rule files < 200 bytes or missing `## Why` sections (closes the empty-stub loophole).
+- 7 new sanitized incidents in `INCIDENTS.md` (#24–#30).
+- Hook header annotations (`# fail-mode:`, `# blast-radius:`) on all 4 shipped hooks.
+
+### Changed
+- **`README.md`** — dropped "rules that can't be ignored" over-claim; replaced with "rules with documented enforcement contracts (some advisory by design)" + deep-link to coverage matrix.
+- **`examples/claude-code-rules/no-local-infrastructure.md`** — full rewrite from categorical "MANDATORY ban on local persistence" to decision framework keyed to durability / recovery / trust boundary / operator availability. Filename retained for link stability; title now "Persistence Hosting — Decision Framework."
+- **`examples/claude-code-rules/session-lifecycle.md`** — Phase 1 Step 3 (italic scope anchor), Phase 3 Step 1 (Done Criteria pre-condition with schema reference), Phase 3 Step 6 (positive verification). New Why entries reference incidents #24 + #25.
+- `AGENT_FRAMEWORK.md` version bumped to v1.4.
+
+---
+
 ## [1.3.1] — 2026-05
 
 ### Fixed

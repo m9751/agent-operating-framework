@@ -40,7 +40,7 @@ Every rule exists because its absence caused a specific, documented failure. See
 ## Library Contents
 
 ### The Framework
-- **[AGENT_FRAMEWORK.md](AGENT_FRAMEWORK.md)** — The complete framework (v1.3). Use as your project's CLAUDE.md.
+- **[AGENT_FRAMEWORK.md](AGENT_FRAMEWORK.md)** — The complete framework (v1.4). Use as your project's CLAUDE.md.
 
 ### Guides
 - **[From Beginner to Framework](guides/from-beginner-to-framework.md)** — You've built CLAUDE.md and skills but outputs are inconsistent. Here's why and what to do next.
