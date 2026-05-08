@@ -296,18 +296,18 @@ The escalation ladder above (memory → rule → hook) is aspirational — not e
 | Rule | Hook | Fail mode | Blast radius | Coverage |
 |---|---|---|---|---|
 | [`read-before-acting`](examples/claude-code-rules/read-before-acting.md) | [`read-gate.sh`](examples/hooks/read-gate.sh) | closed | destructive | enforced |
-| [`scope-discipline`](examples/claude-code-rules/scope-discipline.md) | [`search-gate.sh`](examples/hooks/search-gate.sh) (Gates 2–3) | closed | destructive | partially enforced — Gates 2–3 hook-backed; Gates 1, 4, 5 advisory |
+| [`scope-discipline`](examples/claude-code-rules/scope-discipline.md) | [`search-gate.sh`](examples/hooks/search-gate.sh) (Gates 2–3) + [`dormant-code-gate.sh`](examples/hooks/dormant-code-gate.sh) (Gate 5) | closed | destructive | partially enforced — Gates 2–3 + Gate 5 hook-backed; Gates 1, 4 advisory |
 | [`delivery-protocol`](examples/claude-code-rules/delivery-protocol.md) | [`delivery-gate.sh`](examples/hooks/delivery-gate.sh) (Step 5) | open | advisory | enforced (advisory by design — Step 5 is habit-shaping, not safety-critical) |
-| [`session-lifecycle`](examples/claude-code-rules/session-lifecycle.md) | — | — | — | advisory |
-| [`secure-configuration`](examples/claude-code-rules/secure-configuration.md) | — | — | — | advisory **(security gap — no auth/secrets hook ships in v1.4; tracked for v1.5)** |
-| [`no-local-infrastructure`](examples/claude-code-rules/no-local-infrastructure.md) | — | — | — | advisory (decision framework) |
+| [`session-lifecycle`](examples/claude-code-rules/session-lifecycle.md) | [`focus-breadcrumb.sh`](examples/hooks/focus-breadcrumb.sh) + [`focus-confirmation-gate.sh`](examples/hooks/focus-confirmation-gate.sh) (Phase 1) | open | advisory | enforced (advisory by design — warns rather than blocks per §1.3 precedence) |
+| [`secure-configuration`](examples/claude-code-rules/secure-configuration.md) | [`secure-config-gate.sh`](examples/hooks/secure-config-gate.sh) | closed | security | enforced |
+| [`no-local-infrastructure`](examples/claude-code-rules/no-local-infrastructure.md) | — | — | — | advisory (decision framework — not hookable) |
 
 **Reading the matrix:**
 - **enforced** — a CI or `PreToolUse` hook blocks the action when the rule is violated
 - **partially enforced** — some gates of the rule are hook-backed; others are prose
 - **advisory** — the rule is documented but the agent can still ignore it; Layer 2 (law) without Layer 3 (barrier)
 
-Three rules ship without hooks. `session-lifecycle` and `secure-configuration` are gaps — the failure modes they describe are hookable (settings.xml protection, secrets-in-chat, focus-confirmation) and tracked for v1.5. `no-local-infrastructure` is advisory by design — it is a decision framework that routes to a hosting recommendation per context, not a single invariant a hook can check. Adoption notes:
+Five of six rules ship with hook backing as of v1.5. The single remaining advisory rule is `no-local-infrastructure` — advisory by design, not by gap. It is a decision framework that routes to a hosting recommendation per context (durability / recovery / trust boundary / operator availability), not a single invariant a hook can check. Adoption notes:
 - If you adopt the framework expecting all rules to be system-enforced, this matrix is the reality check.
 - If you need stronger guarantees on the advisory rules, write your own `PreToolUse` hooks against your environment's specifics — the framework's hooks are reference implementations, not exhaustive coverage.
 
