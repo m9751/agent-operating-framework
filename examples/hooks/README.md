@@ -141,6 +141,7 @@ When a hook blocks (exit 2), its stdout becomes the agent's error context. Write
 | `secure-config-gate.sh` | PreToolUse | Hard block (exit 2) | Blocks tool calls containing secret patterns + Write to protected config paths |
 | `focus-breadcrumb.sh` | UserPromptSubmit | Always exit 0 | Companion to focus-confirmation-gate. Detects explicit-task prompts (named target + actionable verb) and writes a session breadcrumb. |
 | `focus-confirmation-gate.sh` | PreToolUse | Advisory (exit 0) | Warns when first Edit/Write/Bash fires with no focus breadcrumb in this session |
+| `dormant-code-gate.sh` | CI lint | Hard block (exit 1) | Rejects PRs that modify code files whose every extracted symbol has zero callers elsewhere in the repo. Backs scope-discipline Gate 5. |
 
 ## The Focus-Confirmation Pair
 
@@ -188,3 +189,4 @@ Each hook has a configuration section at the top. Before deploying, review:
 - **`secure-config-gate.sh`** — `SECRET_REGEX` and `PROTECTED_PATH_REGEX`. Optionally extend the secret regex via the `AOF_SECRET_PATTERNS_FILE` env var (one extra regex per line).
 - **`focus-breadcrumb.sh`** — `EXPLICIT_VERBS` (the verb list that constitutes "explicit task" intent)
 - **`focus-confirmation-gate.sh`** — `GATED_TOOLS` array (which tools warrant the focus check)
+- **`dormant-code-gate.sh`** — `MIN_SYMBOL_LEN` (minimum symbol length to count; default 6 to filter `init`/`main`/etc.) and `SKIP_EXTENSIONS_RE` (which extensions are not "code")
