@@ -138,6 +138,36 @@ When a hook blocks (exit 2), its stdout becomes the agent's error context. Write
 | `search-gate.sh` | PreToolUse | Hard block (exit 2) | Blocks code creation unless a prior search was logged |
 | `delivery-gate.sh` | PreToolUse | Advisory (exit 0) | Reminds the agent to log deliverables to the tracking system |
 | `deprecated-field-gate.sh` | PreToolUse | Hard block (exit 2) | Blocks tool calls that reference deprecated/obsolete field names |
+| `secure-config-gate.sh` | PreToolUse | Hard block (exit 2) | Blocks tool calls containing secret patterns + Write to protected config paths |
+| `focus-breadcrumb.sh` | UserPromptSubmit | Always exit 0 | Companion to focus-confirmation-gate. Detects explicit-task prompts (named target + actionable verb) and writes a session breadcrumb. |
+| `focus-confirmation-gate.sh` | PreToolUse | Advisory (exit 0) | Warns when first Edit/Write/Bash fires with no focus breadcrumb in this session |
+
+## The Focus-Confirmation Pair
+
+`focus-breadcrumb.sh` + `focus-confirmation-gate.sh` work together to enforce session-lifecycle.md Phase 1 (focus confirmation before destructive action) without violating §1.3 precedence (explicit named-target requests don't need a second confirmation).
+
+The pair uses two different hook events:
+
+- **`focus-breadcrumb.sh`** runs on `UserPromptSubmit` — once per operator message. It scans the prompt for an explicit-task pattern (any of the verbs in `EXPLICIT_VERBS`, followed by at least one target token). If matched, it appends a `<timestamp>\t<verb>\t<context>` line to `${TMPDIR}/agent-focus-${CLAUDE_SESSION_ID}.log`.
+
+- **`focus-confirmation-gate.sh`** runs on `PreToolUse` — once per tool call, but only acts on Edit/Write/Bash. If the breadcrumb file is missing or empty, it emits a `::warning::` to stderr and exits 0. Read/Grep/Glob are exempt because research is part of orientation, not destructive action.
+
+Why two scripts, not one: the events fire at different points in the lifecycle. UserPromptSubmit fires once per turn; PreToolUse fires once per tool call. Same conversation, same session ID, shared breadcrumb.
+
+Configuration: add both hooks to `settings.json`:
+
+```json
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      { "matcher": "*", "command": "/path/to/focus-breadcrumb.sh" }
+    ],
+    "PreToolUse": [
+      { "matcher": "Edit|Write|Bash", "command": "/path/to/focus-confirmation-gate.sh" }
+    ]
+  }
+}
+```
 
 ## Getting Started
 
@@ -155,3 +185,6 @@ Each hook has a configuration section at the top. Before deploying, review:
 - **`search-gate.sh`** — `CREATION_TOOLS` and `CREATION_PATTERNS` arrays
 - **`delivery-gate.sh`** — `TRACKING_TABLES` and `NEW_WORK_SIGNALS` arrays
 - **`deprecated-field-gate.sh`** — `DEPRECATED_FIELDS` array (your deprecated-to-current mappings)
+- **`secure-config-gate.sh`** — `SECRET_REGEX` and `PROTECTED_PATH_REGEX`. Optionally extend the secret regex via the `AOF_SECRET_PATTERNS_FILE` env var (one extra regex per line).
+- **`focus-breadcrumb.sh`** — `EXPLICIT_VERBS` (the verb list that constitutes "explicit task" intent)
+- **`focus-confirmation-gate.sh`** — `GATED_TOOLS` array (which tools warrant the focus check)
