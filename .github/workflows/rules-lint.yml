@@ -96,3 +96,78 @@ jobs:
           echo "Checking changed rule files:"
           echo "$changed" | sed 's/^/  - /'
           bash examples/hooks/empty-rule-body-gate.sh $changed
+
+      - name: secure-config-gate self-test
+        run: |
+          set -e
+          # POSITIVE 1: secret in Write content must block (exit 2)
+          if echo '{"tool_name":"Write","tool_input":{"file_path":"/tmp/x","content":"sk-12345678901234567890ABCD"}}' \
+              | bash examples/hooks/secure-config-gate.sh 2>/dev/null; then
+            echo "::error::secure-config-gate did not block synthetic OPENAI-style secret in Write content"
+            exit 1
+          fi
+          # POSITIVE 2: protected-path Write must block
+          if echo '{"tool_name":"Write","tool_input":{"file_path":"/home/u/.m2/settings.xml","content":"<settings/>"}}' \
+              | bash examples/hooks/secure-config-gate.sh 2>/dev/null; then
+            echo "::error::secure-config-gate did not block synthetic Write to ~/.m2/settings.xml"
+            exit 1
+          fi
+          # NEGATIVE: clean Write must pass (exit 0)
+          echo '{"tool_name":"Write","tool_input":{"file_path":"/tmp/clean.md","content":"# clean"}}' \
+              | bash examples/hooks/secure-config-gate.sh
+          echo "secure-config-gate self-test passed: 2 positives blocked, 1 negative allowed."
+
+      - name: focus-confirmation pair self-test
+        run: |
+          set -e
+          export CLAUDE_SESSION_ID="ci-self-test-$$"
+          BC="${TMPDIR:-/tmp}/agent-focus-${CLAUDE_SESSION_ID}.log"
+          rm -f "$BC"
+          # POSITIVE: explicit-task prompt must write breadcrumb (exit 0; breadcrumb non-empty)
+          echo '{"prompt":"fix the build"}' | bash examples/hooks/focus-breadcrumb.sh
+          if [ ! -s "$BC" ]; then
+            echo "::error::focus-breadcrumb.sh did not write breadcrumb on explicit-task prompt"
+            exit 1
+          fi
+          # NEGATIVE: ambiguous prompt must not write breadcrumb (clear first)
+          rm -f "$BC"
+          echo '{"prompt":"what should we work on?"}' | bash examples/hooks/focus-breadcrumb.sh
+          if [ -s "$BC" ]; then
+            echo "::error::focus-breadcrumb.sh wrote breadcrumb on ambiguous prompt"
+            exit 1
+          fi
+          # GATE without breadcrumb: must warn (stderr non-empty) but exit 0
+          gate_stderr="$(echo '{"tool_name":"Write","tool_input":{"file_path":"/tmp/x"}}' \
+              | bash examples/hooks/focus-confirmation-gate.sh 2>&1 >/dev/null)"
+          if [ -z "$gate_stderr" ]; then
+            echo "::error::focus-confirmation-gate did not warn when breadcrumb absent"
+            exit 1
+          fi
+          # GATE with breadcrumb: must be silent (stderr empty)
+          echo '{"prompt":"deploy auth"}' | bash examples/hooks/focus-breadcrumb.sh
+          gate_stderr="$(echo '{"tool_name":"Write","tool_input":{"file_path":"/tmp/x"}}' \
+              | bash examples/hooks/focus-confirmation-gate.sh 2>&1 >/dev/null)"
+          if [ -n "$gate_stderr" ]; then
+            echo "::error::focus-confirmation-gate warned despite breadcrumb being present"
+            exit 1
+          fi
+          echo "focus-confirmation pair self-test passed: breadcrumb writer fires correctly; gate warns then quiets."
+
+      - name: dormant-code-gate self-test
+        run: |
+          set -e
+          # POSITIVE: a real script with callers must pass (exit 0)
+          bash examples/hooks/dormant-code-gate.sh scripts/validate-done-criteria.py
+          # NEGATIVE: synthetic orphan in isolated dir must fail (exit 1)
+          tmp_orphan_dir=$(mktemp -d)
+          cat > "$tmp_orphan_dir/lonely_xyz_module.py" <<'PY'
+          def unique_xyz_orphan_function():
+              return 42
+          class UniqueXyzOrphanClass:
+              pass
+          PY
+          if ( cd "$tmp_orphan_dir" && bash "$GITHUB_WORKSPACE/examples/hooks/dormant-code-gate.sh" lonely_xyz_module.py ) 2>/dev/null; then
+            echo "::error::dormant-code-gate did not reject synthetic orphan file"
+            exit 1
+          fi
+          echo "dormant-code-gate self-test passed: real callers accepted, synthetic orphan rejected."
