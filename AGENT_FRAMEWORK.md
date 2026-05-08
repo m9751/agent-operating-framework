@@ -1,4 +1,4 @@
-# Agent Operating Framework v1.4
+# Agent Operating Framework v1.5
 
 > A behavioral operating system for AI coding agents — born from production failures, not theory.
 >
@@ -291,7 +291,7 @@ See [`guides/enforcement-architecture.md`](guides/enforcement-architecture.md) f
 
 ### 5.3 Rule-to-Hook Coverage
 
-The escalation ladder above (memory → rule → hook) is aspirational — not every rule has a hook backing it, and the framework does not pretend otherwise. The matrix below is the honest accounting of what ships in v1.4:
+The escalation ladder above (memory → rule → hook) is aspirational — not every rule has a hook backing it, and the framework does not pretend otherwise. The matrix below is the honest accounting of what ships in v1.5:
 
 | Rule | Hook | Fail mode | Blast radius | Coverage |
 |---|---|---|---|---|
@@ -352,7 +352,7 @@ See [`guides/rule-consolidation.md`](guides/rule-consolidation.md) for a worked 
 
 ---
 
-## Framework Structure (v1.4)
+## Framework Structure (v1.5)
 
 ```
 AGENT_FRAMEWORK.md          ← This file. The complete behavioral spec.

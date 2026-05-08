@@ -4,6 +4,24 @@ All notable changes to this framework follow [Keep a Changelog](https://keepacha
 
 ---
 
+## [1.5] — 2026-05
+
+### Added
+- **`examples/hooks/secure-config-gate.sh`** — combined PreToolUse hook backing the `secure-configuration` rule. Two checks: secret-pattern detection (provider tokens, JWTs, private-key headers, keyword-paired credentials) on all tools; protected-path detection (`~/.m2/settings.xml`, `~/.ssh/`, `~/.aws/credentials`, `.env*`, `service-account*.json`, `~/.kube/config`) on Write only. Configurable via `AOF_SECRET_PATTERNS_FILE`. Annotations: `# fail-mode: closed`, `# blast-radius: security`.
+- **`examples/hooks/focus-breadcrumb.sh`** — UserPromptSubmit hook. Detects explicit-task patterns (named verb + target token) and writes a session breadcrumb consumed by `focus-confirmation-gate.sh`. Annotations: `# fail-mode: open`, `# blast-radius: advisory`.
+- **`examples/hooks/focus-confirmation-gate.sh`** — PreToolUse advisory gate backing `session-lifecycle` Phase 1. Fires only on Edit/Write/Bash; warns when no breadcrumb exists this session. Read/Grep/Glob exempt. Always exit 0 — §1.3 precedence rejects hard-blocking the first action. Annotations: `# fail-mode: open`, `# blast-radius: advisory`.
+- **`examples/hooks/dormant-code-gate.sh`** — CI lint backing `scope-discipline` Gate 5. Extracts symbols by language (Python `def`/`class`, TS/JS `export`, shell basename) plus the file's basename-without-extension, then greps the repo excluding the source file. Rejects PRs that modify code files where every extracted symbol has zero outside-callers. Annotations: `# fail-mode: closed`, `# blast-radius: security`.
+- **3 new rules-lint.yml self-test steps** — synthetic positive + negative for each new hook on every PR.
+- **3 new sanitized incidents** in `INCIDENTS.md` (#31, #32, #33).
+
+### Changed
+- **`AGENT_FRAMEWORK.md` §5.3 matrix** — `scope-discipline` row gains `dormant-code-gate.sh` for Gate 5; `session-lifecycle` row gains the focus-confirmation pair; `secure-configuration` row gains `secure-config-gate.sh`. Coverage moves from 3-of-6 enforced (v1.4) to **5-of-6 enforced** (v1.5). `no-local-infrastructure` remains advisory by design (decision framework, not hookable).
+- **`AGENT_FRAMEWORK.md` §5.3 narrative** — drops "tracked for v1.5" gap framing. New prose explicitly distinguishes "advisory by design" from "advisory by gap" — only `no-local-infrastructure` is left in the former category.
+- **`examples/hooks/README.md`** — 4 new inventory rows (secure-config-gate, focus-breadcrumb, focus-confirmation-gate, dormant-code-gate); new "The Focus-Confirmation Pair" section explaining the two-event pattern; 4 new customization checklist entries.
+- `AGENT_FRAMEWORK.md` version bumped to v1.5.
+
+---
+
 ## [1.4] — 2026-05
 
 ### Added
