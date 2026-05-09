@@ -22,6 +22,15 @@ This framework is the next step. It adds rules with documented enforcement contr
 
 If you're just getting started with Claude Code, read the beginner guides first. If you've hit the wall where your CLAUDE.md "stops working," [start here](guides/from-beginner-to-framework.md).
 
+| I am… | Start here |
+|-------|-----------|
+| New to Claude Code | [guides/getting-started.md](guides/getting-started.md) |
+| CLAUDE.md "stopped working" | [guides/from-beginner-to-framework.md](guides/from-beginner-to-framework.md) |
+| Want copy-paste rules | [examples/claude-code-rules/](examples/claude-code-rules/) |
+| Want hooks | [examples/hooks/](examples/hooks/) |
+| Want the full framework file | [AGENT_FRAMEWORK.md](AGENT_FRAMEWORK.md) |
+| Curious what failures produced this | [INCIDENTS.md](INCIDENTS.md) |
+
 ## What This Is
 
 A behavioral operating system for Claude Code that combines:
