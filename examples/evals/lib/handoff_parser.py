@@ -45,6 +45,24 @@ _DC_HEADER = re.compile(r"^##\s+Done Criteria\b.*$", re.MULTILINE)
 _ERRORS_HEADER = re.compile(r"^##\s+Errors\b.*$", re.MULTILINE)
 _NEXT_H2 = re.compile(r"^##\s+", re.MULTILINE)
 
+# Filename → (machine, session_date) inference for handoffs that lack frontmatter.
+# Pattern: handoff-{machine}-YYYYMMDD-*.md or handoff-{src}-to-{dst}-YYYYMMDD-*.md
+_FNAME = re.compile(
+    r"^handoff-(?:(?P<machine>mac|win)|(?:mac|win)-to-(?:mac|win))-(?P<date>\d{8})",
+    re.IGNORECASE,
+)
+
+
+def _infer_from_filename(path: Path) -> tuple[Optional[str], Optional[str]]:
+    """Return (session_date_iso, machine) from filename, or (None, None)."""
+    m = _FNAME.match(path.name)
+    if not m:
+        return None, None
+    raw_date = m.group("date")
+    iso = f"{raw_date[0:4]}-{raw_date[4:6]}-{raw_date[6:8]}"
+    machine = (m.group("machine") or "mac").lower()
+    return iso, machine
+
 # Format 1 — numbered list with trailing emoji
 _NUMBERED_LINE = re.compile(r"^\s*\d+\.\s+(.*?)(✅|❌)\s*(.*)$")
 # Format 2 — markdown table row: `| n | text | ✅ ... |` (skip header + separator rows)
@@ -122,9 +140,26 @@ def parse_handoff(path: Path) -> Handoff:
     if errors_section.strip().lower() in ("", "none.", "none"):
         errors_section = ""
 
+    # Filename-inference fallback for handoffs without frontmatter
+    path_obj = Path(path)
+    fname_date, fname_machine = _infer_from_filename(path_obj)
+
+    # Normalize machine to one of {mac, win, unknown} — handoffs in the wild
+    # include free-form values like "Mac", "mac (close-out)", "hand off mac → win"
+    raw_machine = (fm.get("machine") or fname_machine or "unknown").lower()
+    if "mac" in raw_machine and "win" in raw_machine:
+        # Cross-machine handoff — file naming convention determines authoritative side
+        machine = fname_machine or "mac"
+    elif "mac" in raw_machine:
+        machine = "mac"
+    elif "win" in raw_machine:
+        machine = "win"
+    else:
+        machine = "unknown"
+
     return Handoff(
-        session_date=fm.get("session_date", ""),
-        machine=fm.get("machine", "unknown"),
+        session_date=fm.get("session_date") or fname_date or "",
+        machine=machine,
         tokens_input=int(fm["tokens_input"]) if fm.get("tokens_input") else None,
         tokens_output=int(fm["tokens_output"]) if fm.get("tokens_output") else None,
         cost_usd=float(fm["cost_usd"]) if fm.get("cost_usd") else None,
