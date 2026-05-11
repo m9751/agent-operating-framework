@@ -2,7 +2,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-An operating framework for AI coding agents, refined through 12 months of enterprise sales workflow.
+An operating framework for AI coding agents, refined through ~12 months of private enterprise-sales workflow and ~6 weeks of public iteration.
 
 ## Quick Start
 
@@ -76,15 +76,22 @@ Shell scripts that enforce rules at the tool-call level — the third tier of th
 
 | Hook | Type | What It Enforces |
 |------|------|-----------------|
-| [read-gate.sh](examples/hooks/read-gate.sh) | Hard block | Blocks writes unless the target resource was read first |
-| [search-gate.sh](examples/hooks/search-gate.sh) | Hard block | Blocks code creation unless a search was done first |
-| [delivery-gate.sh](examples/hooks/delivery-gate.sh) | Advisory | Reminds agent to log deliverables (fail-open) |
-| [deprecated-field-gate.sh](examples/hooks/deprecated-field-gate.sh) | Hard block | Blocks use of deprecated field names |
+| [read-gate.sh](examples/hooks/read-gate.sh) | PreToolUse hard block | Blocks writes unless the target resource was read first |
+| [search-gate.sh](examples/hooks/search-gate.sh) | PreToolUse hard block | Blocks code creation unless a search was done first |
+| [secure-config-gate.sh](examples/hooks/secure-config-gate.sh) | PreToolUse hard block | Blocks secret patterns in any tool call + Write to protected config paths |
+| [dormant-code-gate.sh](examples/hooks/dormant-code-gate.sh) | CI lint hard block | Rejects PRs that modify files whose every extracted symbol has zero callers elsewhere (`scope-discipline` Gate 5) |
+| [delivery-gate.sh](examples/hooks/delivery-gate.sh) | PreToolUse advisory | Reminds agent to log deliverables (fail-open) |
+| [focus-breadcrumb.sh](examples/hooks/focus-breadcrumb.sh) | UserPromptSubmit | Writes a session breadcrumb when an explicit task is detected (companion to focus-confirmation-gate) |
+| [focus-confirmation-gate.sh](examples/hooks/focus-confirmation-gate.sh) | PreToolUse advisory | Warns when first Edit/Write/Bash fires with no focus breadcrumb (`session-lifecycle` Phase 1) |
+| [deprecated-field-gate.sh](examples/hooks/deprecated-field-gate.sh) | PreToolUse hard block | Template for blocking writes that reference deprecated DB columns or API fields |
+| [empty-rule-body-gate.sh](examples/hooks/empty-rule-body-gate.sh) | CI meta-hook hard block | Pre-merge gate rejecting rule files < 200 bytes or missing `## Why` (closes the empty-stub loophole) |
+
+See [§5.3 Rule-to-Hook Coverage](AGENT_FRAMEWORK.md#53-rule-to-hook-coverage) for which rule each hook backs and the honest enforced-vs-advisory accounting.
 
 See [examples/hooks/README.md](examples/hooks/README.md) for setup instructions and the breadcrumb pattern.
 
 ### Incident Log
-- **[INCIDENTS.md](INCIDENTS.md)** — 23 sanitized incidents linking real failures to the rules they produced. Month-precision dates.
+- **[INCIDENTS.md](INCIDENTS.md)** — 33 sanitized incidents linking real failures to the rules they produced. Month-precision dates.
 
 ## The Key Insight
 

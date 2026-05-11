@@ -373,16 +373,14 @@ examples/
 
 **Claude Code note:** Hooks use Claude Code's `PreToolUse`/`PostToolUse` lifecycle. Rule prose is portable to any agent platform.
 
-### What changed in v1.3
-- **Gate 3a** (read-before-acting) — curl before stripping: never remove a parameter from a working API call without running the full flow without it first.
-- **Gate 4** (read-before-acting) — map evidence to claim: proxy evidence (grep, glob, SQL-exists, simulation) requires proxy language in claims, not assertion language.
-- **Gate 5** (scope-discipline) — dormant code check: grep for callers before proposing any remediation plan; zero callers = dormant code; ceremony must match blast radius.
-- **Session-lifecycle Phase 3 Step 6** — weekly health check to catch orphan references, path-escape errors, and MCP server failures before they compound.
-- LICENSE, CHANGELOG, INCIDENTS, SECURITY, CONTRIBUTING, issue templates added.
-- README scope updated: "Claude Code" replaces "Claude Code, Cursor, Copilot" — hooks are Claude Code-specific.
+### Version history
 
-### What changed in v1.2
-- **Section 2** restructured around the Four Gates pattern (read, first-time check, evidence card, no guessing). Three-Failure Stop absorbed as a subsection.
-- **Section 3** replaced Scope Control and Process Before Execution with Scope Discipline (four gates: feature freeze, approved stack, search before building, eat your own cooking). Process Before Execution absorbed into Session Lifecycle (Section 0.5).
-- **Section 4** expanded with Delivery Protocol (Build → Store → Deploy → Remember → Log), HTML Token Hygiene, and renumbered Post-Delivery Checklist.
-- **Section 5** added Hooks as an explicit third enforcement tier with links to guides and examples. Added Rule Consolidation subsection for managing rule growth.
+Full per-release notes live in [CHANGELOG.md](CHANGELOG.md). The framework file no longer duplicates them — release notes were drifting out of sync with the canonical changelog.
+
+Headline changes from recent versions:
+
+- **v1.5** — `secure-config-gate.sh`, `focus-breadcrumb.sh` + `focus-confirmation-gate.sh`, `dormant-code-gate.sh`. §5.3 coverage moves from 3-of-6 enforced to **5-of-6 enforced**. `no-local-infrastructure` rewritten as a hosting decision framework (advisory by design).
+- **v1.4** — §5.3 Rule-to-Hook Coverage matrix added (honest enforced-vs-advisory accounting). §5.2 fail-mode taxonomy. §1.3 precedence rule. §0.5 italic scope-anchor (Phase 1 Step 4), Done Criteria pre-condition (Phase 3 Step 1), doctor-clean log entry (Phase 3 Step 5). CI shipped: `doc-link-check.yml`, `rules-lint.yml`, `validate-done-criteria.py`. `empty-rule-body-gate.sh` added.
+- **v1.3.1** — onboarding link hotfix: replaced 8 stale rule filename references in `guides/getting-started.md` and `guides/from-beginner-to-framework.md`.
+- **v1.3** — read-before-acting Gate 3a (curl before stripping) and Gate 4 (map evidence to claim). scope-discipline Gate 5 (dormant code check). session-lifecycle Phase 3 Step 6 (weekly health check). LICENSE, CHANGELOG, INCIDENTS, SECURITY, CONTRIBUTING added.
+- **v1.2** — §2 restructured around Four Gates; §3 replaced with Scope Discipline; §4 added Delivery Protocol + HTML Token Hygiene; §5 added Hooks as the third enforcement tier.
