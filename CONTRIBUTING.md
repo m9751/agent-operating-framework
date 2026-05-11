@@ -30,4 +30,4 @@ This framework is Claude Code-specific in its hook implementations. Rule prose i
 4. Add an entry to `INCIDENTS.md` for the incident that produced the rule
 5. Open a PR with a description that includes the incident summary
 
-No CI, no automated tests. Review is manual and best-effort.
+CI on every PR: `.github/workflows/doc-link-check.yml` (lychee link-check), `.github/workflows/rules-lint.yml` (hook fail-mode + blast-radius annotation lint, Done Criteria schema validation via `scripts/validate-done-criteria.py`, empty-rule-body gate). Final review of behavioral content is still manual.

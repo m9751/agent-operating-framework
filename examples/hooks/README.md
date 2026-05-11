@@ -142,6 +142,7 @@ When a hook blocks (exit 2), its stdout becomes the agent's error context. Write
 | `focus-breadcrumb.sh` | UserPromptSubmit | Always exit 0 | Companion to focus-confirmation-gate. Detects explicit-task prompts (named target + actionable verb) and writes a session breadcrumb. |
 | `focus-confirmation-gate.sh` | PreToolUse | Advisory (exit 0) | Warns when first Edit/Write/Bash fires with no focus breadcrumb in this session |
 | `dormant-code-gate.sh` | CI lint | Hard block (exit 1) | Rejects PRs that modify code files whose every extracted symbol has zero callers elsewhere in the repo. Backs scope-discipline Gate 5. |
+| `empty-rule-body-gate.sh` | CI meta-hook | Hard block (exit 1) | Pre-merge gate that rejects rule files (`examples/claude-code-rules/*.md`) with body bytes < 200 or missing a `## Why` section. Closes the empty-stub loophole flagged in INCIDENTS #25. |
 
 ## The Focus-Confirmation Pair
 
