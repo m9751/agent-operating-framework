@@ -75,12 +75,17 @@ handoff_path: handoff-mac-20260427-turenne-pharmedco.md
 session_date: 2026-04-27
 machine: mac
 
-rule_adherence_score: 10.0
+rule_adherence_score: 9.0
 rule_adherence_evidence:
   blocked_by_gate_or_similar: 0
-  errors_section_nonempty: false   # No errors section
+  errors_section_nonempty: true    # CORRECTED 2026-05-11 during Phase 2.5 drift check —
+                                   # original gold-set said false, but the handoff DOES
+                                   # have a "## Errors / Blockers" section with 2 bullets
+                                   # (NotebookLM auth stale, Qdrant manual .env export).
+                                   # Harness caught the operator's blind spot — exactly
+                                   # what self-application is for.
   dc_partial: false                 # No DC, no partial penalty
-  notes: "Clean status=in-progress session, account-research type, no rule violations or errors."
+  notes: "Errors section has 2 unresolved items. -1.0 penalty. No DC = no plan score."
 
 plan_delivery_score: null           # NO ## Done Criteria block — sparse signal
 plan_delivery_evidence:
@@ -95,7 +100,8 @@ session_tokens_output: null
 
 dispatch_score: null
 
-composite_score: 10.0   # falls back to rule-only because plan is null
+composite_score: 9.0    # falls back to rule-only because plan is null; 9.0 not 10.0
+                        # because errors section is non-empty
 ```
 
 ---
