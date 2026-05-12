@@ -107,6 +107,14 @@ Prose tells the model what it should do. Gates determine what it is allowed to d
 
 This framework's core principle: **one read is worth ten guesses.**
 
+## Self-Applied Measurement
+
+This framework grades itself. An eval harness in [`examples/evals/`](examples/evals/) walks session handoffs from the author's own workflow and scores each one on four deterministic metrics — rule adherence, plan-delivery gap, cost, and dispatch quality — then publishes the trend to a live dashboard:
+
+**Dashboard:** [aof-eval.vercel.app](https://aof-eval.vercel.app/)
+
+The harness is the framework's own credibility test: if the rules work, the scores hold. If a regression slips into v1.6, the trend line moves before anyone writes a postmortem. Numbers come from 47 real sessions backfilled at v1.5 ship (mean composite 9.20/10). Re-run manually with `python -m examples.evals.run_harness` whenever a new batch of sessions lands.
+
 ## Author
 
 Built and maintained by [Michael Busacca](https://www.linkedin.com/in/enterprise-software-sales/) — 13+ years enterprise SaaS, running AI-assisted workflows in a high-volume sales context.
