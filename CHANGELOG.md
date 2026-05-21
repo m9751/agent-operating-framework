@@ -4,6 +4,61 @@ All notable changes to this framework follow [Keep a Changelog](https://keepacha
 
 ---
 
+## [1.6] — 2026-05 (DRAFT — not yet tagged)
+
+### Context for the author of this release
+
+This entry was drafted on 2026-05-21 after a full night of operational work that generated the raw material for v1.6. Before writing the release, read these source artifacts:
+
+| Item | Where to find the details |
+|---|---|
+| Full hook audit methodology | `~/.claude/plans/2026-05-21-full-hook-audit-wbs.md` — 4-track WBS, Codex batch audit pattern across 5 event types, triage table format. The audit covered 29 registered hooks on Mac. |
+| Blast-radius annotation standard | Already in AOF v1.4+. But the private implementation revealed that Codex will reject any hook missing `# fail-mode:` and `# blast-radius:` even if the logic is correct. The fix in `~/repos/claude-config/hooks/` is the reference — all 29 hooks now have it. |
+| Breadcrumb protocol | `~/repos/claude-config/hooks/breadcrumb-lib.sh` — shipped PR #65 on `m9751/claude-config`. Five functions: `bc_session_key`, `bc_dir`, `bc_write`, `bc_exists`, `bc_read`. 8 hooks updated to source it. Handoff: `~/Documents/SmokinTerritory/SmokinTerritory/03-Projects/ST2/handoff-mac-20260521-breadcrumb-protocol-shipped.md` |
+| Emergency bypass design | `~/Documents/SmokinTerritory/SmokinTerritory/03-Projects/ST2/handoff-mac-20260521-telemetry-and-bypass-design.md` — `CLAUDE_HOOKS_SAFE_MODE=1` env var, 3-line addition to each blocking hook. Not yet built in the private repo. |
+| Hook telemetry design | Same handoff file as bypass above. `telemetry.hook_events` table in smokin-ops, Stop hook reading breadcrumb-lib output. Not yet built. |
+| The three questions nobody asks | Conversation from 2026-05-21 session — not in a file yet. See below for the content. |
+
+### The three questions nobody asks (new AOF section)
+
+These belong in a new `guides/hook-operations.md` or as a `§5.5` in `AGENT_FRAMEWORK.md`:
+
+**1. What happens when a hook itself fails?**
+If a hook crashes mid-execution — python3 not found, disk full, corrupt stdin — behavior is undefined. Some hooks fail-open silently, some exit with a non-2 code. You have no monitoring on hook health. A broken gate looks identical to a passing gate. The AOF should prescribe: every hook must define its `fail-closed` vs `fail-open` behavior on unexpected errors, and the `# fail-mode:` annotation must cover this case explicitly.
+
+**2. Are these hooks actually changing behavior, or are they theater?**
+Without telemetry you cannot distinguish "the gate is working" from "nothing bad happened to test it." The AOF should prescribe: after 2 weeks of deployment, operators should be able to answer which hooks fired, how often, and whether they blocked anything. The `telemetry.hook_events` design (see handoff above) is the reference implementation for this.
+
+**3. What is the exit strategy if a hook goes rogue?**
+There is no fast-disable path in v1.5. The AOF should prescribe a mandatory bypass mechanism for every installation. The `CLAUDE_HOOKS_SAFE_MODE=1` env var pattern (see handoff above) is the reference design: one env var, one line per hook, 30-second recovery during a live session.
+
+### Planned additions for v1.6
+
+- **`guides/hook-operations.md`** — new guide covering the three questions above, with reference implementations for bypass and telemetry
+- **`examples/hooks/breadcrumb-lib.sh`** — shared breadcrumb library (port from `m9751/claude-config` PR #65)
+- **`guides/advanced/hook-audit-methodology.md`** — 4-track audit WBS pattern, Codex batch audit format, triage table schema
+- **Updated `AGENT_FRAMEWORK.md` §5`** — add breadcrumb protocol as a standard pattern; add emergency bypass as a mandatory deployment requirement; update hook annotation standard to flag the `fail-on-error` case
+- **Eval harness tag** — `b3d8451` is on main but untagged; v1.6 tag will capture it
+
+### What is NOT in v1.6 (deferred)
+
+- `telemetry.hook_events` implementation — design is ready but not built
+- `CLAUDE_HOOKS_SAFE_MODE` implementation — design is ready but not built
+- These ship when the private reference implementations are validated, then get ported
+
+### Release checklist
+
+- [ ] Write `guides/hook-operations.md` (three questions content above)
+- [ ] Port `breadcrumb-lib.sh` from claude-config to `examples/hooks/`
+- [ ] Write `guides/advanced/hook-audit-methodology.md`
+- [ ] Update `AGENT_FRAMEWORK.md` §5 matrix and narrative
+- [ ] Verify eval harness (`b3d8451`) is clean and functional
+- [ ] Update version references in `AGENT_FRAMEWORK.md`
+- [ ] `git tag v1.6 && git push --tags`
+- [ ] Create GitHub release with these CHANGELOG notes
+
+---
+
 ## [1.5] — 2026-05
 
 ### Added
