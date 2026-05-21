@@ -15,8 +15,8 @@ This entry was drafted on 2026-05-21 after a full night of operational work that
 | Full hook audit methodology | `~/.claude/plans/2026-05-21-full-hook-audit-wbs.md` — 4-track WBS, Codex batch audit pattern across 5 event types, triage table format. The audit covered 29 registered hooks on Mac. |
 | Blast-radius annotation standard | Already in AOF v1.4+. But the private implementation revealed that Codex will reject any hook missing `# fail-mode:` and `# blast-radius:` even if the logic is correct. The fix in `~/repos/claude-config/hooks/` is the reference — all 29 hooks now have it. |
 | Breadcrumb protocol | `~/repos/claude-config/hooks/breadcrumb-lib.sh` — shipped PR #65 on `m9751/claude-config`. Five functions: `bc_session_key`, `bc_dir`, `bc_write`, `bc_exists`, `bc_read`. 8 hooks updated to source it. Handoff: `~/Documents/SmokinTerritory/SmokinTerritory/03-Projects/ST2/handoff-mac-20260521-breadcrumb-protocol-shipped.md` |
-| Emergency bypass design | `~/Documents/SmokinTerritory/SmokinTerritory/03-Projects/ST2/handoff-mac-20260521-telemetry-and-bypass-design.md` — `CLAUDE_HOOKS_SAFE_MODE=1` env var, 3-line addition to each blocking hook. Not yet built in the private repo. |
-| Hook telemetry design | Same handoff file as bypass above. `telemetry.hook_events` table in smokin-ops, Stop hook reading breadcrumb-lib output. Not yet built. |
+| Emergency bypass | Reference implementation: `~/repos/claude-config/hooks/` — `CLAUDE_HOOKS_SAFE_MODE=1` check added to all 13 blocking hooks. Design handoff: `~/Documents/SmokinTerritory/SmokinTerritory/03-Projects/ST2/handoff-mac-20260521-telemetry-and-bypass-design.md` |
+| Hook telemetry | Reference implementation: `~/repos/claude-config/hooks/hook-telemetry-stop.sh` — Stop hook reads breadcrumb-lib session data, bulk-INSERTs into `telemetry.hook_events` on smokin-ops. Same design handoff as bypass above. |
 | The three questions nobody asks | Conversation from 2026-05-21 session — not in a file yet. See below for the content. |
 
 ### The three questions nobody asks (new AOF section)
@@ -40,11 +40,11 @@ There is no fast-disable path in v1.5. The AOF should prescribe a mandatory bypa
 - **Updated `AGENT_FRAMEWORK.md` §5`** — add breadcrumb protocol as a standard pattern; add emergency bypass as a mandatory deployment requirement; update hook annotation standard to flag the `fail-on-error` case
 - **Eval harness tag** — `b3d8451` is on main but untagged; v1.6 tag will capture it
 
-### What is NOT in v1.6 (deferred)
+### What is NOT in v1.6 (deferred to AOF examples)
 
-- `telemetry.hook_events` implementation — design is ready but not built
-- `CLAUDE_HOOKS_SAFE_MODE` implementation — design is ready but not built
-- These ship when the private reference implementations are validated, then get ported
+- `telemetry.hook_events` schema — implemented in private smokin-ops; needs sanitized port to `examples/` before v1.6 tags
+- `CLAUDE_HOOKS_SAFE_MODE` bypass — implemented in private claude-config hooks; needs sanitized port to `examples/hooks/` before v1.6 tags
+- `hook-telemetry-stop.sh` — implemented in private claude-config; same port requirement
 
 ### Release checklist
 
