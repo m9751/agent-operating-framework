@@ -143,6 +143,7 @@ When a hook blocks (exit 2), its stdout becomes the agent's error context. Write
 | `focus-confirmation-gate.sh` | PreToolUse | Advisory (exit 0) | Warns when first Edit/Write/Bash fires with no focus breadcrumb in this session |
 | `dormant-code-gate.sh` | CI lint | Hard block (exit 1) | Rejects PRs that modify code files whose every extracted symbol has zero callers elsewhere in the repo. Backs scope-discipline Gate 5. |
 | `empty-rule-body-gate.sh` | CI meta-hook | Hard block (exit 1) | Pre-merge gate that rejects rule files (`examples/claude-code-rules/*.md`) with body bytes < 200 or missing a `## Why` section. Closes the empty-stub loophole flagged in INCIDENTS #25. |
+| `breadcrumb-lib.sh` | Library | — (source only) | Shared session-scoped breadcrumb API: `bc_session_key`, `bc_dir`, `bc_write`, `bc_exists`, `bc_read`. Source into any hook that needs to log or check session state. |
 
 ## The Focus-Confirmation Pair
 
@@ -170,6 +171,21 @@ Configuration: add both hooks to `settings.json`:
   }
 }
 ```
+
+## Watcher Hooks Under Branch-Protected Repos
+
+Watcher-class hooks (FileSystemWatcher daemons, inotify cron, scheduled auto-push scripts) that run `git push origin main` will fail-loop indefinitely when branch protection requires a PR. The correct pattern:
+
+1. Keep the `git commit` step — produces a local backup even when push is blocked.
+2. Skip the `git push` step when branch protection is detected.
+3. Log `PUSH-SKIPPED branch-protection-active` for auditability.
+4. Use `# fail-mode: silent-skip` annotation — this is not a hook failure, it's a deliberate no-op.
+
+Detection: catch exit code 1 from `git push` and grep stderr for `GH006` or `protected branch`. Log the skip and exit 0.
+
+The operator's surfacing path is a manual PR from the auto-committed local branch.
+
+See [AOF Incident #35](../../INCIDENTS.md) for the canonical case study.
 
 ## Getting Started
 

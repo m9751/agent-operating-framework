@@ -1,4 +1,4 @@
-# Agent Operating Framework v1.5
+# Agent Operating Framework v1.6
 
 > A behavioral operating system for AI coding agents — born from production failures, not theory.
 >
@@ -284,14 +284,27 @@ If a rule gets ignored, promote it to a hook.
 | **destructive** (mutates state, deploys, deletes, writes infrastructure) | **fail-closed** | a fail-open destructive hook teaches the agent that broken guardrails are the same as no guardrails — exactly the wrong lesson before high-stakes actions |
 | **security** (secrets, auth, credentials, protected configs) | **fail-closed** | the cost of a leaked secret strictly dominates the cost of a paused tool call |
 | **advisory** (logging hints, breadcrumbs, "did you remember to…") | **fail-open** | these hooks shape habit, not safety; failing them shouldn't block work |
+| **watcher/cron** (auto-push, file sync, periodic automation) | **silent-skip** | the hook detected a known runtime condition (e.g., branch-protected push) that requires operator attention but is not a hook failure — log `PUSH-SKIPPED <reason>` and exit 0 |
 
 Every shipped hook in `examples/hooks/` carries `# fail-mode:` and `# blast-radius:` header annotations matching this taxonomy; CI rejects hooks added without them (see `rules-lint.yml`). When you author a new hook, declare both before writing logic.
 
-See [`guides/enforcement-architecture.md`](guides/enforcement-architecture.md) for design patterns and [`examples/hooks/`](examples/hooks/) for reference implementations.
+**Emergency bypass.** Every blocking (fail-closed or fail-secure) hook must check `CLAUDE_HOOKS_SAFE_MODE` at the top and exit 0 if it's set. This provides a 30-second recovery path when a hook goes rogue:
+
+```bash
+if [[ "${CLAUDE_HOOKS_SAFE_MODE:-0}" == "1" ]]; then
+  exit 0
+fi
+```
+
+Advisory hooks do not need the bypass — they cannot block work by definition.
+
+**Breadcrumb protocol.** Hooks share session state via the `breadcrumb-lib.sh` library (`examples/hooks/breadcrumb-lib.sh`). One file per named breadcrumb; file presence = flag set. Use `bc_write`, `bc_exists`, and `bc_read`. The session key comes from `CLAUDE_CODE_SESSION_ID` (set by the Claude Code runtime on all platforms).
+
+See [`guides/enforcement-architecture.md`](guides/enforcement-architecture.md) for design patterns, [`guides/hook-operations.md`](guides/hook-operations.md) for operational guidance (failure, theater, escape), and [`examples/hooks/`](examples/hooks/) for reference implementations.
 
 ### 5.3 Rule-to-Hook Coverage
 
-The escalation ladder above (memory → rule → hook) is aspirational — not every rule has a hook backing it, and the framework does not pretend otherwise. The matrix below is the honest accounting of what ships in v1.5:
+The escalation ladder above (memory → rule → hook) is aspirational — not every rule has a hook backing it, and the framework does not pretend otherwise. The matrix below is the accurate accounting of what ships in v1.6:
 
 | Rule | Hook | Fail mode | Blast radius | Coverage |
 |---|---|---|---|---|
@@ -379,8 +392,9 @@ Full per-release notes live in [CHANGELOG.md](CHANGELOG.md). The framework file 
 
 Headline changes from recent versions:
 
+- **v1.6** — Hook operations layer: `breadcrumb-lib.sh` shared session library, `CLAUDE_HOOKS_SAFE_MODE` emergency bypass pattern, `# fail-mode: silent-skip` taxonomy tier for watcher-class hooks. New guides: `hook-operations.md` (the three operational questions) and `hook-audit-methodology.md` (4-track audit pattern). §5.2 updated with bypass + breadcrumb protocol as standard requirements. AOF self-eval harness (`b3d8451`) on main.
 - **v1.5** — `secure-config-gate.sh`, `focus-breadcrumb.sh` + `focus-confirmation-gate.sh`, `dormant-code-gate.sh`. §5.3 coverage moves from 3-of-6 enforced to **5-of-6 enforced**. `no-local-infrastructure` rewritten as a hosting decision framework (advisory by design).
-- **v1.4** — §5.3 Rule-to-Hook Coverage matrix added (honest enforced-vs-advisory accounting). §5.2 fail-mode taxonomy. §1.3 precedence rule. §0.5 italic scope-anchor (Phase 1 Step 4), Done Criteria pre-condition (Phase 3 Step 1), doctor-clean log entry (Phase 3 Step 5). CI shipped: `doc-link-check.yml`, `rules-lint.yml`, `validate-done-criteria.py`. `empty-rule-body-gate.sh` added.
+- **v1.4** — §5.3 Rule-to-Hook Coverage matrix added (accurate enforced-vs-advisory accounting). §5.2 fail-mode taxonomy. §1.3 precedence rule. §0.5 italic scope-anchor (Phase 1 Step 4), Done Criteria pre-condition (Phase 3 Step 1), doctor-clean log entry (Phase 3 Step 5). CI shipped: `doc-link-check.yml`, `rules-lint.yml`, `validate-done-criteria.py`. `empty-rule-body-gate.sh` added.
 - **v1.3.1** — onboarding link hotfix: replaced 8 stale rule filename references in `guides/getting-started.md` and `guides/from-beginner-to-framework.md`.
 - **v1.3** — read-before-acting Gate 3a (curl before stripping) and Gate 4 (map evidence to claim). scope-discipline Gate 5 (dormant code check). session-lifecycle Phase 3 Step 6 (weekly health check). LICENSE, CHANGELOG, INCIDENTS, SECURITY, CONTRIBUTING added.
 - **v1.2** — §2 restructured around Four Gates; §3 replaced with Scope Discipline; §4 added Delivery Protocol + HTML Token Hygiene; §5 added Hooks as the third enforcement tier.
