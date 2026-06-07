@@ -4,6 +4,18 @@ All notable changes to this framework follow [Keep a Changelog](https://keepacha
 
 ---
 
+## [1.7] — TBD (Notes)
+
+### Candidate content (deferred from v1.6)
+
+- **`telemetry.hook_events` schema** — implemented in private smokin-ops; needs sanitized port to `examples/` before shipping publicly
+- **`hook-telemetry-stop.sh`** — implemented in private claude-config; same port requirement
+- **Silent failure discipline (ADR 0012)** — full governance audit of 63 hooks, ~50 fail-opens fixed on 2026-06-07; belongs here as the "we can prove it works" release. Pattern: every fail-open hook path writes to `~/.claude/migration-breadcrumbs/.errors.log` via `bc_write_error`; watchdog surfaces the log on session close.
+- **AOF self-eval harness** — `b3d8451` is already on main and captured by v1.6 tag; v1.7 is where the harness gets real operational data behind it — rules scoreboard, DPMO chart, hook compliance scoring from live sessions.
+- **AGENTS.md governance standard** — smokin-os and smokin-memory both received Level 3 AGENTS.md files on 2026-06-07. AOF should document the pattern: how a repo declares its agent governance contract (router table, subagent dispatch, hard rules). Reference implementations in `m9751/smokin-os` and `m9751/smokin-memory`.
+
+---
+
 ## [1.6] — 2026-06
 
 ### Context for the author of this release
