@@ -1,4 +1,4 @@
-# Agent Operating Framework v1.6
+# Agent Operating Framework v1.7
 
 > A behavioral operating system for AI coding agents — born from production failures, not theory.
 >
@@ -327,6 +327,12 @@ Five of six rules ship with hook backing as of v1.5. The single remaining adviso
 **Meta-hooks** (not bound to a single rule):
 - [`deprecated-field-gate.sh`](examples/hooks/deprecated-field-gate.sh) — template for blocking writes that reference deprecated DB columns or API fields *(fail-mode: closed, blast-radius: destructive)*
 - [`empty-rule-body-gate.sh`](examples/hooks/empty-rule-body-gate.sh) — pre-merge CI check that rejects rule files with empty bodies (< 200 bytes) or missing `## Why` sections *(fail-mode: closed, blast-radius: security — protects framework integrity against false-positive "applied" claims)*
+- [`startup-gate.sh`](examples/hooks/startup-gate.sh) — SessionStart hook; checks all four governance surfaces (repo, AGENTS.md, active plan, hook registration) and writes a drift report to `~/.claude/startup-gate-report.md` *(fail-mode: open, blast-radius: advisory)*
+- [`hook-telemetry-stop.sh`](examples/hooks/hook-telemetry-stop.sh) — Stop hook; reads per-hook fire/block breadcrumbs and bulk-INSERTs session telemetry *(fail-mode: open, blast-radius: advisory)*
+
+**Libraries** (source into hooks, do not execute directly):
+- [`breadcrumb-lib.sh`](examples/hooks/breadcrumb-lib.sh) — session-scoped breadcrumb API
+- [`examples/hooks/lib/normalize-hook-input.sh`](examples/hooks/lib/normalize-hook-input.sh) — cross-runtime payload normalization (Claude Code + Grok field names and tool-name literals)
 
 ### 5.4 Rule Consolidation
 Rules accumulate naturally as lessons are captured. Left unchecked, they become unreadable — too many rules means none get followed. When the rule count grows past 15-20:
@@ -379,9 +385,17 @@ guides/
   auto-optimization.md      ← How the self-improvement loop works
   enforcement-architecture.md    ← Memory → Rules → Hooks design patterns
   rule-consolidation.md     ← How to cluster and compress rules at scale
+  hook-operations.md        ← The three operational questions (v1.6)
+  advanced/
+    done-criteria-schema.md ← Done Criteria spec and validator
+    hook-audit-methodology.md    ← 4-track audit pattern (v1.6)
+    silent-failure-discipline.md ← Every fail-open path must log (v1.7)
+    agents-md-standard.md   ← Three-level repo governance contract (v1.7)
 examples/
   claude-code-rules/        ← Sample rule files for Claude Code
   hooks/                    ← Reference hook implementations (Claude Code-specific)
+    lib/
+      normalize-hook-input.sh  ← Cross-runtime payload normalization (v1.7)
 ```
 
 **Claude Code note:** Hooks use Claude Code's `PreToolUse`/`PostToolUse` lifecycle. Rule prose is portable to any agent platform.
@@ -392,6 +406,7 @@ Full per-release notes live in [CHANGELOG.md](CHANGELOG.md). The framework file 
 
 Headline changes from recent versions:
 
+- **v1.7** — Provable hooks release: `startup-gate.sh` (SessionStart governance check), `normalize-hook-input.sh` (cross-runtime payload normalization), `hook-telemetry-stop.sh` (session-end telemetry). New guides: `silent-failure-discipline.md` (ADR 0012 — every fail-open path must log) and `agents-md-standard.md` (three-level repo governance contract). Incidents #36–#38.
 - **v1.6** — Hook operations layer: `breadcrumb-lib.sh` shared session library, `CLAUDE_HOOKS_SAFE_MODE` emergency bypass pattern, `# fail-mode: silent-skip` taxonomy tier for watcher-class hooks. New guides: `hook-operations.md` (the three operational questions) and `hook-audit-methodology.md` (4-track audit pattern). §5.2 updated with bypass + breadcrumb protocol as standard requirements. AOF self-eval harness (`b3d8451`) on main.
 - **v1.5** — `secure-config-gate.sh`, `focus-breadcrumb.sh` + `focus-confirmation-gate.sh`, `dormant-code-gate.sh`. §5.3 coverage moves from 3-of-6 enforced to **5-of-6 enforced**. `no-local-infrastructure` rewritten as a hosting decision framework (advisory by design).
 - **v1.4** — §5.3 Rule-to-Hook Coverage matrix added (accurate enforced-vs-advisory accounting). §5.2 fail-mode taxonomy. §1.3 precedence rule. §0.5 italic scope-anchor (Phase 1 Step 4), Done Criteria pre-condition (Phase 3 Step 1), doctor-clean log entry (Phase 3 Step 5). CI shipped: `doc-link-check.yml`, `rules-lint.yml`, `validate-done-criteria.py`. `empty-rule-body-gate.sh` added.
