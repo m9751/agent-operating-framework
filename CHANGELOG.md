@@ -6,13 +6,24 @@ All notable changes to this framework follow [Keep a Changelog](https://keepacha
 
 ## [1.7] — TBD (Notes)
 
-### Candidate content (deferred from v1.6)
+### Candidate content
 
-- **`telemetry.hook_events` schema** — implemented in private smokin-ops; needs sanitized port to `examples/` before shipping publicly
-- **`hook-telemetry-stop.sh`** — implemented in private claude-config; same port requirement
-- **Silent failure discipline (ADR 0012)** — full governance audit of 63 hooks, ~50 fail-opens fixed on 2026-06-07; belongs here as the "we can prove it works" release. Pattern: every fail-open hook path writes to `~/.claude/migration-breadcrumbs/.errors.log` via `bc_write_error`; watchdog surfaces the log on session close.
-- **AOF self-eval harness** — `b3d8451` is already on main and captured by v1.6 tag; v1.7 is where the harness gets real operational data behind it — rules scoreboard, DPMO chart, hook compliance scoring from live sessions.
-- **AGENTS.md governance standard** — smokin-os and smokin-memory both received Level 3 AGENTS.md files on 2026-06-07. AOF should document the pattern: how a repo declares its agent governance contract (router table, subagent dispatch, hard rules). Reference implementations in `m9751/smokin-os` and `m9751/smokin-memory`.
+The hooks × memory × skills design document (`smokin-os/spec/hooks-memory-skills-design.md`, written 2026-06-07) is the architectural blueprint for v1.7. Five concrete items emerge from it:
+
+**1. FORGET mechanism** — the confirmed missing leg of memory integrity (READ + WRITE are built; FORGET is not). Required components: `valid-as-of` + `falsification-pointer` fields on every significant memory entry; an invalidation signal hook (PostToolUse, fires on file rename/delete, flags matching memory entries as stale — writes to a sidecar path, never to MEMORY.md directly per g-immutable); a reconciliation detector script that produces stale/ok/unverified report across the full Hindsight store; Hindsight store expiry path (TTL + last-accessed). This is the hard prerequisite for Phase D (reorg/global deploy) — Phase D must not start until steps 0.1–0.5 of the FORGET track are complete.
+
+**2. Startup gate hook** — a SessionStart hook that checks all four surfaces (memory, hooks, AGENTS.md, skills) at cold start and reports drift before any task begins. 7 checks: repo detection, AGENTS.md verification, active plan detection, memory conflict check, skills manifest currency, hook registration gap, conflict resolution. Key design decision: output goes to `~/.claude/startup-gate-report.md` (NOT `additionalContext` — confirmed ineffective by DC3 live test 2026-06-07 where two fresh sessions never surfaced the alert). Session-lifecycle.md Phase 1 reads the file explicitly. Blocked until the hook normalization helper (item 3) exists.
+
+**3. Hook normalization helper** — `normalize-hook-input.sh` — a shared library that normalizes hook input JSON across runtimes. Hooks written for Claude Code's `tool_name`/`tool_input` snake_case + `"Bash"`/`"Edit"` literals silently bypass on Grok's `toolName`/`toolInput` camelCase + `"run_terminal_cmd"`/`"search_replace"` shape. Without this helper, every new hook has the same silent-bypass failure mode on non-Claude-Code runtimes.
+
+**4. Per-invocation telemetry + opportunity counter** — extends `telemetry.hook_events` with `repo_cwd` + `tool_outcome` columns; adds `eval.opportunities` table for the AOF self-eval DPMO denominator. This feeds the self-eval harness (`b3d8451`, already on main) with real operational data — rules scoreboard, DPMO chart, hook compliance scoring. Has a mandatory day-7 goal DC requiring an active fire mechanism (a reminder hook that persists until the DC is confirmed by live query). Neither this item nor the self-eval Phase 1 dashboard close without a unified migration covering both the telemetry columns and the self-eval columns (`latency_ms_avg`, `latency_ms_p95`, `first_block_at`, `exit_codes_seen`).
+
+**5. `distill-memory.py` regex fix (PREREQ-B1)** — the Phase B memory distiller has been silently no-op'ing since ship (2026-05-28) because the commit SHA regex matches YYYYMMDD dates as hex strings, firing the info-loss invariant on every cron run. Fix: tighten the regex to require ≥1 non-decimal hex digit. This unblocks both the FORGET track and the telemetry track — neither can be properly validated while the distiller is dead.
+
+**Plus (from v1.6 deferred list):**
+- `telemetry.hook_events` schema — sanitized port to `examples/` (coordinates with item 4)
+- `hook-telemetry-stop.sh` — sanitized port to `examples/hooks/`
+- Silent failure discipline (ADR 0012) — 63-hook governance audit + ~50 fail-opens fixed 2026-06-07; the "we can prove it works" release. Pattern: every fail-open path writes to `.errors.log` via `bc_write_error`; watchdog surfaces on session close.
 
 ---
 
