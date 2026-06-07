@@ -18,7 +18,7 @@ See [guides/getting-started.md](guides/getting-started.md) for the full adoption
 
 You've set up CLAUDE.md. You've built a few skills. You're using Projects Memory. But outputs are still inconsistent, the agent ignores rules under pressure, and you're manually reviewing everything.
 
-This framework is the next step. It adds rules with documented enforcement contracts (some advisory by design), circuit breakers (stop after 3 failures), and an escalation model (advice → law → barriers) that makes your CLAUDE.md actually stick. See the [rule-to-hook coverage matrix](AGENT_FRAMEWORK.md#53-rule-to-hook-coverage) for what is system-enforced versus advisory in v1.5 — five of six rules ship with hooks; one (`no-local-infrastructure`) is a decision framework that is advisory by design.
+This framework is the next step. It adds rules with documented enforcement contracts (some advisory by design), circuit breakers (stop after 3 failures), and an escalation model (advice → law → barriers) that makes your CLAUDE.md actually stick. See the [rule-to-hook coverage matrix](AGENT_FRAMEWORK.md#53-rule-to-hook-coverage) for what is system-enforced versus advisory in v1.6 — five of six rules ship with hooks; one (`no-local-infrastructure`) is a decision framework that is advisory by design.
 
 If you're just getting started with Claude Code, read the beginner guides first. If you've hit the wall where your CLAUDE.md "stops working," [start here](guides/from-beginner-to-framework.md).
 
@@ -49,7 +49,7 @@ Every rule exists because its absence caused a specific, documented failure. See
 ## Library Contents
 
 ### The Framework
-- **[AGENT_FRAMEWORK.md](AGENT_FRAMEWORK.md)** — The complete framework (v1.5). Use as your project's CLAUDE.md.
+- **[AGENT_FRAMEWORK.md](AGENT_FRAMEWORK.md)** — The complete framework (v1.6). Use as your project's CLAUDE.md.
 
 ### Guides
 - **[From Beginner to Framework](guides/from-beginner-to-framework.md)** — You've built CLAUDE.md and skills but outputs are inconsistent. Here's why and what to do next.
@@ -58,6 +58,8 @@ Every rule exists because its absence caused a specific, documented failure. See
 - **[Rule Consolidation](guides/rule-consolidation.md)** — When rules accumulate past ~20, how to cluster by root cause and compress without losing lessons
 - **[Why Post-Failure Frameworks Win](guides/why-post-failure.md)** — Why rules born from incidents beat rules born from best-practice lists
 - **[Auto-Optimizing Skills](guides/auto-optimization.md)** — Eval-driven skill improvement: triage, iteration loop, 7 guardrails, data model
+- **[Hook Operations](guides/hook-operations.md)** — The three operational questions: what happens when a hook fails, how to tell if hooks are working, and how to escape when one goes rogue
+- **[Hook Audit Methodology](guides/advanced/hook-audit-methodology.md)** — 4-track audit pattern (registration, annotations, live fire, telemetry) with triage table and Codex batch audit pattern
 
 ### Copy-Paste Rules
 Individual rule files for `~/.claude/rules/` or `.claude/rules/`. Each absorbs multiple earlier rules into a single file with sub-gates:
@@ -85,13 +87,14 @@ Shell scripts that enforce rules at the tool-call level — the third tier of th
 | [focus-confirmation-gate.sh](examples/hooks/focus-confirmation-gate.sh) | PreToolUse advisory | Warns when first Edit/Write/Bash fires with no focus breadcrumb (`session-lifecycle` Phase 1) |
 | [deprecated-field-gate.sh](examples/hooks/deprecated-field-gate.sh) | PreToolUse hard block | Template for blocking writes that reference deprecated DB columns or API fields |
 | [empty-rule-body-gate.sh](examples/hooks/empty-rule-body-gate.sh) | CI meta-hook hard block | Pre-merge gate rejecting rule files < 200 bytes or missing `## Why` (closes the empty-stub loophole) |
+| [breadcrumb-lib.sh](examples/hooks/breadcrumb-lib.sh) | Library (source only) | Shared session-scoped breadcrumb API — source into any hook that needs to log or check session state |
 
-See [§5.3 Rule-to-Hook Coverage](AGENT_FRAMEWORK.md#53-rule-to-hook-coverage) for which rule each hook backs and the honest enforced-vs-advisory accounting.
+See [§5.3 Rule-to-Hook Coverage](AGENT_FRAMEWORK.md#53-rule-to-hook-coverage) for which rule each hook backs and the full enforced-vs-advisory accounting.
 
 See [examples/hooks/README.md](examples/hooks/README.md) for setup instructions and the breadcrumb pattern.
 
 ### Incident Log
-- **[INCIDENTS.md](INCIDENTS.md)** — 33 sanitized incidents linking real failures to the rules they produced. Month-precision dates.
+- **[INCIDENTS.md](INCIDENTS.md)** — 35 sanitized incidents linking real failures to the rules they produced. Month-precision dates.
 
 ## The Key Insight
 

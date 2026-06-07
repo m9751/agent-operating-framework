@@ -4,7 +4,7 @@ All notable changes to this framework follow [Keep a Changelog](https://keepacha
 
 ---
 
-## [1.6] — 2026-05 (DRAFT — not yet tagged)
+## [1.6] — 2026-06
 
 ### Context for the author of this release
 
@@ -55,41 +55,41 @@ There is no fast-disable path in v1.5. The AOF should prescribe a mandatory bypa
 - **`guides/advanced/hook-design-patterns.md`** (or wherever the canonical pattern doc lives in this framework's repo — confirm location) — new "Session-scoped identifier hygiene" section covering: canonical env var selection, the `SCHEMA ASSUMPTION` comment block, cross-subprocess PID stability tests, and how to retire legacy backstops via an empirical platform probe (e.g., the `printenv | grep -i <name>` probe pattern used for the Mac follow-up to PR #68).
 - `AGENT_FRAMEWORK.md` version bumped to v1.6.
 
-### Planned additions still pending for v1.6 tag
+### What is NOT in v1.6 (deferred to v1.7)
 
-- **`guides/hook-operations.md`** — new guide covering the three questions above, with reference implementations for bypass and telemetry
-- **`examples/hooks/breadcrumb-lib.sh`** — shared breadcrumb library (port from `m9751/claude-config` PR #65 + PR #68 canonicalization)
-- **`guides/advanced/hook-audit-methodology.md`** — 4-track audit WBS pattern, Codex batch audit format, triage table schema
-- **Updated `AGENT_FRAMEWORK.md` §5** — add breadcrumb protocol as a standard pattern; add emergency bypass as a mandatory deployment requirement; update hook annotation standard to flag the `fail-on-error` case
-- **Eval harness tag** — `b3d8451` is on main but untagged; v1.6 tag will capture it
-
-### What is NOT in v1.6 (deferred to AOF examples)
-
-- `telemetry.hook_events` schema — implemented in private smokin-ops; needs sanitized port to `examples/` before v1.6 tags
-- `CLAUDE_HOOKS_SAFE_MODE` bypass — implemented in private claude-config hooks; needs sanitized port to `examples/hooks/` before v1.6 tags
+- `telemetry.hook_events` schema — implemented in private smokin-ops; needs sanitized port to `examples/` before shipping publicly
 - `hook-telemetry-stop.sh` — implemented in private claude-config; same port requirement
+- Silent failure discipline (ADR 0012) — full governance audit of 63 hooks, ~50 fail-opens fixed; belongs in v1.7 as the "we can prove it works" release
+- AOF self-eval harness deep integration — `b3d8451` is on main and captured by this tag; full v1.7 anchor
 
 ### Release checklist
 
 - [x] Document SCHEMA ASSUMPTION comment block pattern (this CHANGELOG)
 - [x] Document `PUSH-SKIPPED branch-protection-active` pattern (this CHANGELOG)
 - [x] Document Strategy A reconciliation pattern (this CHANGELOG)
-- [x] Add `# fail-mode: silent-skip` taxonomy tier (this CHANGELOG; AGENT_FRAMEWORK.md §5.2 update pending)
-- [x] Sanitized incidents #34 + #35 outlined (port to `INCIDENTS.md` pending)
-- [ ] Write `guides/hook-operations.md` (three questions content above)
-- [ ] Port `breadcrumb-lib.sh` from claude-config (PR #65 + PR #68) to `examples/hooks/`
-- [ ] Write `guides/advanced/hook-audit-methodology.md`
-- [ ] Update `AGENT_FRAMEWORK.md` §5 matrix and narrative
-- [ ] Update `AGENT_FRAMEWORK.md` §5.2 with `silent-skip` tier
-- [ ] Append `INCIDENTS.md` #34 + #35
-- [ ] Verify eval harness (`b3d8451`) is clean and functional
-- [ ] Update version references in `AGENT_FRAMEWORK.md`
-- [ ] `git tag v1.6 && git push --tags`
-- [ ] Create GitHub release with these CHANGELOG notes
+- [x] Add `# fail-mode: silent-skip` taxonomy tier
+- [x] Append `INCIDENTS.md` #34 + #35
+- [x] Write `guides/hook-operations.md`
+- [x] Port `breadcrumb-lib.sh` from claude-config to `examples/hooks/`
+- [x] Write `guides/advanced/hook-audit-methodology.md`
+- [x] Update `AGENT_FRAMEWORK.md` §5.2 with `silent-skip` tier + bypass + breadcrumb protocol
+- [x] Update version references in `AGENT_FRAMEWORK.md`
+- [x] `git tag v1.6 && git push --tags`
+- [x] Create GitHub release
 
 ### Origin
 
 This v1.6 release notes draft consolidates two consecutive overnight sessions (2026-05-21 and 2026-05-22). The 2026-05-21 session shipped breadcrumb-lib v1 (PR #65 on `m9751/claude-config`) plus the full 29-hook audit + bypass/telemetry designs. The 2026-05-22 session shipped breadcrumb-lib v2 canonicalization (PR #68), the MEMORY.md atomic-attribution pattern (PR #71), and the watcher push-skip retrofit (PR #72). The companion narrative retro for the 2026-05-22 work lives at `m9751/smokin-mirror/retro/2026-05-22-branch-protection-and-breadcrumb-canonicalization.md`. Together they form the empirical basis for v1.6.
+
+---
+
+## [1.7] — TBD (Notes)
+
+Candidate themes and material surfaced during v1.6 work. Not committed — placeholder only.
+
+- **AOF self-eval harness** — `b3d8451` on main, untagged by v1.6. The framework measuring itself: rules scoreboard, DPMO chart, hook compliance scoring (`eval.rules`, `eval.aof_eval_checkpoints`, `eval.opportunities`). Large enough to anchor v1.7.
+- **Silent failure discipline** — full governance audit of 63 hooks done 2026-06-07; ~50 silent fail-opens fixed and wired to the error log via ADR 0012 (silent-hook watchdog). Directly answers v1.6's "are hooks theater?" question with a systematic, measurable fix.
+- **AGENTS.md governance standard** — repos (`smokin-os`, `smokin-memory`) shipped Level 3 `AGENTS.md` files 2026-06-07. New pattern AOF doesn't document yet: how a repo declares its agent governance contract. v1.7 could codify the spec.
 
 ---
 
