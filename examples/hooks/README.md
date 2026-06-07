@@ -144,6 +144,9 @@ When a hook blocks (exit 2), its stdout becomes the agent's error context. Write
 | `dormant-code-gate.sh` | CI lint | Hard block (exit 1) | Rejects PRs that modify code files whose every extracted symbol has zero callers elsewhere in the repo. Backs scope-discipline Gate 5. |
 | `empty-rule-body-gate.sh` | CI meta-hook | Hard block (exit 1) | Pre-merge gate that rejects rule files (`examples/claude-code-rules/*.md`) with body bytes < 200 or missing a `## Why` section. Closes the empty-stub loophole flagged in INCIDENTS #25. |
 | `breadcrumb-lib.sh` | Library | — (source only) | Shared session-scoped breadcrumb API: `bc_session_key`, `bc_dir`, `bc_write`, `bc_exists`, `bc_read`. Source into any hook that needs to log or check session state. |
+| `startup-gate.sh` | SessionStart | Advisory (exit 0) | Checks repo, AGENTS.md, active plan, skills manifest, and hook registration at session start. Writes drift report to `~/.claude/startup-gate-report.md`. |
+| `hook-telemetry-stop.sh` | Stop | Advisory (exit 0) | Reads fire/block breadcrumbs at session end; bulk-INSERTs one row per hook into a configurable telemetry store (set `AOF_TELEMETRY_URL` + `AOF_TELEMETRY_KEY`). |
+| `lib/normalize-hook-input.sh` | Library | — (source only) | Normalizes hook payload field names (camelCase → snake_case) and tool-name literals (Grok → Claude Code). Source before any `tool_name` check for multi-runtime hooks. |
 
 ## The Focus-Confirmation Pair
 

@@ -4,26 +4,56 @@ All notable changes to this framework follow [Keep a Changelog](https://keepacha
 
 ---
 
-## [1.7] — TBD (Notes)
+## [1.7] — 2026-06
 
-### Candidate content
+### Background
 
-The hooks × memory × skills design document (`smokin-os/spec/hooks-memory-skills-design.md`, written 2026-06-07) is the architectural blueprint for v1.7. Five concrete items emerge from it:
+The hooks × memory × skills design document (`smokin-os/spec/hooks-memory-skills-design.md`, written 2026-06-07) is the architectural blueprint for v1.7. Five concrete items emerged from it; three ship with this release as public reference implementations. The remaining two (FORGET mechanism, `distill-memory.py` fix) are private-infrastructure items deferred to v1.8.
 
-**1. FORGET mechanism** — the confirmed missing leg of memory integrity (READ + WRITE are built; FORGET is not). Required components: `valid-as-of` + `falsification-pointer` fields on every significant memory entry; an invalidation signal hook (PostToolUse, fires on file rename/delete, flags matching memory entries as stale — writes to a sidecar path, never to MEMORY.md directly per g-immutable); a reconciliation detector script that produces stale/ok/unverified report across the full Hindsight store; Hindsight store expiry path (TTL + last-accessed). This is the hard prerequisite for Phase D (reorg/global deploy) — Phase D must not start until steps 0.1–0.5 of the FORGET track are complete.
+### What v1.7 covers (the "provable hooks" release)
 
-**2. Startup gate hook** — a SessionStart hook that checks all four surfaces (memory, hooks, AGENTS.md, skills) at cold start and reports drift before any task begins. 7 checks: repo detection, AGENTS.md verification, active plan detection, memory conflict check, skills manifest currency, hook registration gap, conflict resolution. Key design decision: output goes to `~/.claude/startup-gate-report.md` (NOT `additionalContext` — confirmed ineffective by DC3 live test 2026-06-07 where two fresh sessions never surfaced the alert). Session-lifecycle.md Phase 1 reads the file explicitly. Blocked until the hook normalization helper (item 3) exists.
+v1.6 shipped hooks. v1.7 answers: *can you prove they're working, can they survive across runtimes, and do you know what to do at cold start?* Three new components:
 
-**3. Hook normalization helper** — `normalize-hook-input.sh` — a shared library that normalizes hook input JSON across runtimes. Hooks written for Claude Code's `tool_name`/`tool_input` snake_case + `"Bash"`/`"Edit"` literals silently bypass on Grok's `toolName`/`toolInput` camelCase + `"run_terminal_cmd"`/`"search_replace"` shape. Without this helper, every new hook has the same silent-bypass failure mode on non-Claude-Code runtimes.
+### Added
 
-**4. Per-invocation telemetry + opportunity counter** — extends `telemetry.hook_events` with `repo_cwd` + `tool_outcome` columns; adds `eval.opportunities` table for the AOF self-eval DPMO denominator. This feeds the self-eval harness (`b3d8451`, already on main) with real operational data — rules scoreboard, DPMO chart, hook compliance scoring. Has a mandatory day-7 goal DC requiring an active fire mechanism (a reminder hook that persists until the DC is confirmed by live query). Neither this item nor the self-eval Phase 1 dashboard close without a unified migration covering both the telemetry columns and the self-eval columns (`latency_ms_avg`, `latency_ms_p95`, `first_block_at`, `exit_codes_seen`).
+- **`examples/hooks/lib/normalize-hook-input.sh`** — shared payload normalization library. Hooks written for Claude Code's `tool_name`/`tool_input` snake_case + `"Bash"`/`"Edit"` literals silently bypass on Grok's `toolName`/`toolInput` camelCase + `"run_terminal_cmd"`/`"search_replace"` shape. This library normalizes both field names and tool-name literals so every hook that sources it works regardless of runtime. Provides two functions: `nh_normalize` (full normalization, stdout), `nh_tool_name` (quick dispatch helper). Fail-open: if python3 is missing or JSON parse fails, returns input unchanged — pre-normalization behavior, no regression.
 
-**5. `distill-memory.py` regex fix (PREREQ-B1)** — the Phase B memory distiller has been silently no-op'ing since ship (2026-05-28) because the commit SHA regex matches YYYYMMDD dates as hex strings, firing the info-loss invariant on every cron run. Fix: tighten the regex to require ≥1 non-decimal hex digit. This unblocks both the FORGET track and the telemetry track — neither can be properly validated while the distiller is dead.
+- **`examples/hooks/startup-gate.sh`** — SessionStart hook. Checks all four governance surfaces at cold start and writes a drift report to `~/.claude/startup-gate-report.md`. 7 checks: repo detection, AGENTS.md verification, active plan detection, memory conflict detection (stub — FORGET mechanism pending), skills manifest currency, hook registration gap (disk vs settings.json diff), conflict resolution. Key design decision: output goes to a file (NOT `additionalContext` — confirmed ineffective by live test where fresh sessions never surfaced the alert). Session-lifecycle.md Phase 1 reads the file explicitly. Annotations: `# fail-mode: open`, `# blast-radius: advisory`.
 
-**Plus (from v1.6 deferred list):**
-- `telemetry.hook_events` schema — sanitized port to `examples/` (coordinates with item 4)
-- `hook-telemetry-stop.sh` — sanitized port to `examples/hooks/`
-- Silent failure discipline (ADR 0012) — 63-hook governance audit + ~50 fail-opens fixed 2026-06-07; the "we can prove it works" release. Pattern: every fail-open path writes to `.errors.log` via `bc_write_error`; watchdog surfaces on session close.
+- **`examples/hooks/hook-telemetry-stop.sh`** — Stop hook. Runs at session end; reads fire and block breadcrumbs from `breadcrumb-lib.sh`, bulk-INSERTs one row per hook into a telemetry store. Answers v1.6's "are hooks theater?" question with operational data. Sanitized to use a configurable `AOF_TELEMETRY_URL` + `AOF_TELEMETRY_KEY` environment variable pattern (private implementation uses smokin-ops; adapters plug in at the env-var layer). Annotations: `# fail-mode: open`, `# blast-radius: advisory`.
+
+- **`guides/advanced/silent-failure-discipline.md`** — documents ADR 0012: every hook fail-open path must write a tab-separated line to `.errors.log` via a `bc_write_error` call or equivalent direct write. Pattern, self-test command, and the 1441-entry error log as proof of the contract working. Sourced from a full governance audit of 63 hooks (2026-06-07) that found ~50 silent fail-opens.
+
+- **`guides/advanced/agents-md-standard.md`** — codifies the AGENTS.md governance contract. Three levels: Level 1 (identity sentence only), Level 2 (identity + subagent routing table), Level 3 (identity + routing + procedures + ADR register). Reference implementations from `smokin-os` and `smokin-memory` repos (2026-06-07). Explains why a repo-level governance declaration matters for multi-agent environments.
+
+- **3 new sanitized incidents** in `INCIDENTS.md` (#36, #37, #38).
+
+### Changed
+
+- **`AGENT_FRAMEWORK.md`** — version bump to v1.7. §5.3 matrix updated: `startup-gate.sh` added as a meta-hook covering the session-lifecycle open step; `normalize-hook-input.sh` added as a cross-runtime library. Framework structure section updated with new `examples/hooks/lib/` directory and two new advanced guides.
+- **`README.md`** — v1.7 references, 38 incidents, new guides in library table, `startup-gate.sh` and `normalize-hook-input.sh` in hook table.
+- **`examples/hooks/README.md`** — 3 new inventory rows.
+
+### What is NOT in v1.7 (deferred to v1.8)
+
+- **FORGET mechanism** — the missing leg of memory integrity (READ + WRITE are built; FORGET is not). Requires `valid-as-of` + `falsification-pointer` fields on memory entries, an invalidation signal hook, and a reconciliation detector. This is the hard prerequisite for Phase D (global deploy).
+- **`distill-memory.py` regex fix** — Phase B memory distiller has been silently no-op'ing since ship (2026-05-28): commit SHA regex matches YYYYMMDD dates as hex strings, firing the info-loss invariant on every cron run. Fix: tighten regex to require ≥1 non-decimal hex digit.
+- **AOF self-eval Phase 1 dashboard** — harness (`b3d8451`) is on main; full operational data integration requires the telemetry columns + opportunity counter migration that `hook-telemetry-stop.sh` feeds.
+
+### Release checklist
+
+- [x] Fix CHANGELOG duplicate [1.7] section
+- [x] Port `examples/hooks/lib/normalize-hook-input.sh`
+- [x] Port `examples/hooks/startup-gate.sh`
+- [x] Port `examples/hooks/hook-telemetry-stop.sh`
+- [x] Write `guides/advanced/silent-failure-discipline.md`
+- [x] Write `guides/advanced/agents-md-standard.md`
+- [x] Add incidents #36, #37, #38
+- [x] Update `AGENT_FRAMEWORK.md` v1.6 → v1.7
+- [x] Update `README.md`
+- [x] Update `examples/hooks/README.md`
+- [x] `git tag v1.7 && git push --tags`
+- [x] Create GitHub release
 
 ---
 
@@ -103,16 +133,6 @@ There is no fast-disable path in v1.5. The AOF should prescribe a mandatory bypa
 ### Origin
 
 This v1.6 release notes draft consolidates two consecutive overnight sessions (2026-05-21 and 2026-05-22). The 2026-05-21 session shipped breadcrumb-lib v1 (PR #65 on `m9751/claude-config`) plus the full 29-hook audit + bypass/telemetry designs. The 2026-05-22 session shipped breadcrumb-lib v2 canonicalization (PR #68), the MEMORY.md atomic-attribution pattern (PR #71), and the watcher push-skip retrofit (PR #72). The companion narrative retro for the 2026-05-22 work lives at `m9751/smokin-mirror/retro/2026-05-22-branch-protection-and-breadcrumb-canonicalization.md`. Together they form the empirical basis for v1.6.
-
----
-
-## [1.7] — TBD (Notes)
-
-Candidate themes and material surfaced during v1.6 work. Not committed — placeholder only.
-
-- **AOF self-eval harness** — `b3d8451` on main, untagged by v1.6. The framework measuring itself: rules scoreboard, DPMO chart, hook compliance scoring (`eval.rules`, `eval.aof_eval_checkpoints`, `eval.opportunities`). Large enough to anchor v1.7.
-- **Silent failure discipline** — full governance audit of 63 hooks done 2026-06-07; ~50 silent fail-opens fixed and wired to the error log via ADR 0012 (silent-hook watchdog). Directly answers v1.6's "are hooks theater?" question with a systematic, measurable fix.
-- **AGENTS.md governance standard** — repos (`smokin-os`, `smokin-memory`) shipped Level 3 `AGENTS.md` files 2026-06-07. New pattern AOF doesn't document yet: how a repo declares its agent governance contract. v1.7 could codify the spec.
 
 ---
 
