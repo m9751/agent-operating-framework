@@ -57,11 +57,13 @@ jobs:
           echo "Validator self-test passed: good fixture accepted, bad fixture rejected."
 
       - name: Done Criteria schema validation
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
         run: |
           set -e
           # Find any plan files added or modified in this PR.
           # Plans live under plans/ at the repo root or examples/plans/.
-          changed=$(git diff --name-only --diff-filter=AM "${{ github.event.pull_request.base.sha || github.event.before }}" HEAD -- 'plans/**/*.md' 'examples/plans/**/*.md' 2>/dev/null || true)
+          changed=$(git diff --name-only --diff-filter=AM "$BASE_SHA" HEAD -- 'plans/**/*.md' 'examples/plans/**/*.md' 2>/dev/null || true)
           if [ -z "$changed" ]; then
             echo "No plan files added/modified in this PR — skipping Done Criteria validation."
             exit 0
@@ -85,10 +87,12 @@ jobs:
           echo "Empty-rule-body gate self-test passed: real rules accepted, stub rejected."
 
       - name: Empty-rule-body gate on changed rule files
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
         run: |
           set -e
           # Find rule files added/modified in this PR.
-          changed=$(git diff --name-only --diff-filter=AM "${{ github.event.pull_request.base.sha || github.event.before }}" HEAD -- 'examples/claude-code-rules/**/*.md' 2>/dev/null || true)
+          changed=$(git diff --name-only --diff-filter=AM "$BASE_SHA" HEAD -- 'examples/claude-code-rules/**/*.md' 2>/dev/null || true)
           if [ -z "$changed" ]; then
             echo "No rule files added/modified in this PR — skipping per-file check."
             exit 0
