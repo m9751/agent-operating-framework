@@ -155,11 +155,17 @@ BLOCK
 }
 
 # Phase B: block explicit verification claims that cite a path without a Read breadcrumb.
+# Extract ALL backtick-quoted paths from each hit — not just the first.
+# A claim citing two paths previously only checked the first one.
 VERIFY_PATHS=""
 while IFS= read -r hit; do
   [ -z "$hit" ] && continue
-  path=$(echo "$hit" | sed -E 's/.*`([^`]+)`.*/\1/')
-  [ -n "$path" ] && VERIFY_PATHS="${VERIFY_PATHS}${path}"$'\n'
+  _remaining="$hit"
+  while echo "$_remaining" | grep -qE '`[^`]+`'; do
+    _path="$(echo "$_remaining" | grep -oE '`[^`]+`' | head -1 | tr -d '`')"
+    [ -n "$_path" ] && VERIFY_PATHS="${VERIFY_PATHS}${_path}"$'\n'
+    _remaining="${_remaining#*`${_path}`}"
+  done
 done < <(echo "$TEXT" | grep -oiE '(verified|confirmed|dispatched) against (real file )?`[^`]+`' || true)
 
 while IFS= read -r CLAIM_PATH; do

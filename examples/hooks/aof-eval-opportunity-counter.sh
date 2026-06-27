@@ -22,13 +22,20 @@ SUPABASE_KEY="${AOF_EVAL_SUPABASE_KEY:-}"
 MACHINE="$(uname -s | tr '[:upper:]' '[:lower:]' | sed 's/darwin/mac/;s/mingw.*/win11/;s/msys.*/win11/')"
 insert_opportunity() {
   local rule_id="$1" tool_name="$2" repo_cwd="${3:-}"
-  local repo_json="null"
-  [[ -n "$repo_cwd" ]] && repo_json="$(python3 -c 'import json,sys; print(json.dumps(sys.argv[1]))' "$repo_cwd")"
+  local repo_json="null" tool_name_json session_id_json
+  # Use python3 json.dumps for all user-controlled string fields to prevent JSON injection.
+  # Raw interpolation of tool_name/session_id allows " or \ to break JSON structure.
+  tool_name_json="$(python3 -c 'import json,sys; print(json.dumps(sys.argv[1]))' "$tool_name" 2>/dev/null)" \
+    || { printf '%s\taof-eval-opportunity-counter\tjson-encode-failed\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "${HOME}/.claude/migration-breadcrumbs/.errors.log" 2>/dev/null || true; return; }
+  session_id_json="$(python3 -c 'import json,sys; print(json.dumps(sys.argv[1]))' "$SESSION_ID" 2>/dev/null)" \
+    || { printf '%s\taof-eval-opportunity-counter\tjson-encode-failed\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "${HOME}/.claude/migration-breadcrumbs/.errors.log" 2>/dev/null || true; return; }
+  [[ -n "$repo_cwd" ]] && repo_json="$(python3 -c 'import json,sys; print(json.dumps(sys.argv[1]))' "$repo_cwd" 2>/dev/null)" \
+    || repo_json='"unknown"'
   curl -sf -X POST "${SUPABASE_URL}/rest/v1/opportunities" \
     -H "apikey: ${SUPABASE_KEY}" -H "Authorization: Bearer ${SUPABASE_KEY}" \
     -H "Content-Type: application/json" -H "Accept-Profile: eval" -H "Content-Profile: eval" \
     -H "Prefer: return=minimal" \
-    -d "{\"session_id\":\"${SESSION_ID}\",\"tool_name\":\"${tool_name}\",\"rule_id\":\"${rule_id}\",\"repo_cwd\":${repo_json},\"machine\":\"${MACHINE}\"}" \
+    -d "{\"session_id\":${session_id_json},\"tool_name\":${tool_name_json},\"rule_id\":\"${rule_id}\",\"repo_cwd\":${repo_json},\"machine\":\"${MACHINE}\"}" \
     --max-time 2 2>/dev/null || printf '%s\taof-eval-opportunity-counter\tsupabase-insert-failed\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "${HOME}/.claude/migration-breadcrumbs/.errors.log" 2>/dev/null || true
 }
 SESSION_ID="${CLAUDE_CODE_SESSION_ID:-}"

@@ -35,6 +35,16 @@ set -u
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/breadcrumb-lib.sh" 2>/dev/null || true
+# Guard: if breadcrumb-lib.sh failed to source, bc_record_exit is undefined.
+# Without the guard, the trap fires "command not found" on every exit, which
+# sets $? = 127 — converting a legitimate exit 2 block into a non-block exit code
+# that the Claude Code harness may treat as a non-block. Define a no-op if missing.
+if ! command -v bc_record_exit >/dev/null 2>&1; then
+  bc_record_exit() { :; }
+fi
+if ! command -v bc_write >/dev/null 2>&1; then
+  bc_write() { :; }
+fi
 trap 'bc_record_exit "three-failure-stop-gate" "$?"' EXIT
 
 STATE_ROOT="${HOME}/.claude/state/three-failure-stop"

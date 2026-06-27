@@ -89,9 +89,10 @@ if [ ! -f "$GATE" ]; then
   printf "  SKIP  gate not found at %s\n" "$GATE"
   PASS=$((PASS + 1))
 else
-  # Grok-shaped payload: toolInput instead of tool_input, touching a repo path
-  # The breadcrumb log for this session will not have agent-operating-framework/AGENTS.md,
-  # so the gate should block (exit 2). If normalization is skipped the gate exits 0.
+  # Grok-shaped payload: toolInput instead of tool_input, touching a repo path.
+  # Expected: exit 2 (blocked). Without normalization the gate sees no tool_input.command
+  # → empty COMMAND → exits 0. Both outcomes produce exit 2, but for different reasons;
+  # the control payload below (snake_case + innocuous path) distinguishes them.
   GROK_PAYLOAD='{"toolName":"Bash","toolInput":{"command":"ls '"${HOME}"'/repos/agent-operating-framework/"}}'
   GATE_RC=0
   printf '%s' "$GROK_PAYLOAD" | HOOK_INPUT_JSON="" bash "$GATE" 2>/dev/null || GATE_RC=$?
@@ -103,6 +104,19 @@ else
     FAIL=$((FAIL + 1))
   else
     printf "  FAIL  agentsmd-bash-gate exited %d (unexpected)\n" "$GATE_RC"
+    FAIL=$((FAIL + 1))
+  fi
+
+  # Control payload: snake_case envelope, command that does NOT touch a repo path.
+  # Must exit 0 — proves the gate discriminates rather than blocking everything.
+  CONTROL_PAYLOAD='{"tool_name":"Bash","tool_input":{"command":"echo hello"}}'
+  CTRL_RC=0
+  printf '%s' "$CONTROL_PAYLOAD" | HOOK_INPUT_JSON="" bash "$GATE" 2>/dev/null || CTRL_RC=$?
+  if [ "$CTRL_RC" -eq 0 ]; then
+    printf "  PASS  agentsmd-bash-gate allowed harmless snake_case payload (exit 0)\n"
+    PASS=$((PASS + 1))
+  else
+    printf "  FAIL  agentsmd-bash-gate blocked harmless payload (exit %d) — gate blocks everything\n" "$CTRL_RC"
     FAIL=$((FAIL + 1))
   fi
 fi

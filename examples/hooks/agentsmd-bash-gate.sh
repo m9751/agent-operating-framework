@@ -61,11 +61,11 @@ done
 # Fixed: require the command to reference AGENTS.md at the target repo path specifically,
 # not just contain "AGENTS.md" anywhere in the string.
 AGENTS_PATH="$HOME/repos/$REPO_NAME/AGENTS.md"
-case "$COMMAND" in
-    *"$AGENTS_PATH"*|*"AGENTS.md"$'\n'*|"cat "*"AGENTS.md"|"cat AGENTS.md")  exit 0 ;;
-esac
-# Also allow if command is purely a Read of AGENTS.md (no other repo path actions)
-if echo "$COMMAND" | grep -qE "^[[:space:]]*(cat|head|tail|less|bat)[[:space:]].*AGENTS\.md[[:space:]]*$"; then
+# Allow only commands that reference the specific AGENTS.md path for THIS repo.
+# Broad pattern matching (any command containing "AGENTS.md") was bypassable via
+# "cat /other/repo/AGENTS.md; <dangerous command targeting $REPO_NAME>".
+# Fix: anchor to $AGENTS_PATH only. The anchored grep below is the sole allow path.
+if echo "$COMMAND" | grep -qF "$AGENTS_PATH"; then
   exit 0
 fi
 
