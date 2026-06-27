@@ -147,6 +147,12 @@ When a hook blocks (exit 2), its stdout becomes the agent's error context. Write
 | `startup-gate.sh` | SessionStart | Advisory (exit 0) | Checks repo, AGENTS.md, active plan, skills manifest, and hook registration at session start. Writes drift report to `~/.claude/startup-gate-report.md`. |
 | `hook-telemetry-stop.sh` | Stop | Advisory (exit 0) | Reads fire/block breadcrumbs at session end; bulk-INSERTs one row per hook into a configurable telemetry store (set `AOF_TELEMETRY_URL` + `AOF_TELEMETRY_KEY`). |
 | `lib/normalize-hook-input.sh` | Library | — (source only) | Normalizes hook payload field names (camelCase → snake_case) and tool-name literals (Grok → Claude Code). Source before any `tool_name` check for multi-runtime hooks. |
+| `agentsmd-bash-gate.sh` | PreToolUse (Bash) | Hard block (exit 2) | Blocks Bash commands touching `~/repos/<name>/` unless AGENTS.md for that repo was Read this session. Complement to `read-gate.sh` which covers Edit/Write. |
+| `agentsmd-session-inject.sh` | SessionStart | Advisory (exit 0) | When cwd is inside a repo, prints AGENTS.md to stdout as session context before any user prompt fires. |
+| `three-failure-stop-gate.sh` | PreToolUse (Bash) | Advisory block (exit 2) | Blocks the 4th `fix(...)` commit in 2 hours unless a `# halted-and-researched:` attestation is in the commit body. Fail-open on repo-resolve failure. |
+| `claim-evidence-gate-dispatch.sh` | PreToolUse (Edit\|Write\|Bash) | Hard block (exit 2) | Cross-platform dispatch wrapper for Gate 4. Probes native Go binary with two-probe trust check; falls back to `claim-evidence-gate.sh` if binary is missing or fails either probe. Fail-closed with no runnable gate. |
+| `claim-evidence-gate.sh` | PreToolUse (Edit\|Write\|Bash) | Hard block (exit 2) | Bash floor for Gate 4. Blocks assertion language patterns and path-cited claims without a session Read breadcrumb. Matches Go binary patterns one-for-one (softened per ADR 0064). |
+| `aof-eval-opportunity-counter.sh` | PreToolUse / SessionStart / UserPromptSubmit | Advisory (exit 0) | POSTs to `eval.opportunities` on each tool call for DPMO scoring. Health signal = row count, NOT `hook_events` fire_count. Requires `AOF_EVAL_SUPABASE_URL` + `AOF_EVAL_SUPABASE_KEY` env vars. |
 
 ## The Focus-Confirmation Pair
 

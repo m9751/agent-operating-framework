@@ -18,7 +18,7 @@ See [guides/getting-started.md](guides/getting-started.md) for the full adoption
 
 You've set up CLAUDE.md. You've built a few skills. You're using Projects Memory. But outputs are still inconsistent, the agent ignores rules under pressure, and you're manually reviewing everything.
 
-This framework is the next step. It adds rules with documented enforcement contracts (some advisory by design), circuit breakers (stop after 3 failures), and an escalation model (advice → law → barriers) that makes your CLAUDE.md actually stick. See the [rule-to-hook coverage matrix](AGENT_FRAMEWORK.md#53-rule-to-hook-coverage) for what is system-enforced versus advisory in v1.7 — five of six rules ship with hooks; one (`no-local-infrastructure`) is a decision framework that is advisory by design.
+This framework is the next step. It adds rules with documented enforcement contracts (some advisory by design), circuit breakers (stop after 3 failures), and an escalation model (advice → law → barriers) that makes your CLAUDE.md actually stick. See the [rule-to-hook coverage matrix](AGENT_FRAMEWORK.md#53-rule-to-hook-coverage) for what is system-enforced versus advisory in v1.8 — five of six rules ship with hooks; one (`no-local-infrastructure`) is a decision framework that is advisory by design.
 
 If you're just getting started with Claude Code, read the beginner guides first. If you've hit the wall where your CLAUDE.md "stops working," [start here](guides/from-beginner-to-framework.md).
 
@@ -49,7 +49,7 @@ Every rule exists because its absence caused a specific, documented failure. See
 ## Library Contents
 
 ### The Framework
-- **[AGENT_FRAMEWORK.md](AGENT_FRAMEWORK.md)** — The complete framework (v1.7). Use as your project's CLAUDE.md.
+- **[AGENT_FRAMEWORK.md](AGENT_FRAMEWORK.md)** — The complete framework (v1.8). Use as your project's CLAUDE.md.
 
 ### Guides
 - **[From Beginner to Framework](guides/from-beginner-to-framework.md)** — You've built CLAUDE.md and skills but outputs are inconsistent. Here's why and what to do next.
@@ -93,13 +93,19 @@ Shell scripts that enforce rules at the tool-call level — the third tier of th
 | [startup-gate.sh](examples/hooks/startup-gate.sh) | SessionStart advisory | Checks repo, AGENTS.md, active plan, and hook registration gap at session start; writes drift report |
 | [hook-telemetry-stop.sh](examples/hooks/hook-telemetry-stop.sh) | Stop advisory | Reads fire/block breadcrumbs at session end; bulk-INSERTs telemetry rows |
 | [lib/normalize-hook-input.sh](examples/hooks/lib/normalize-hook-input.sh) | Library (source only) | Normalizes hook payload field names and tool-name literals across Claude Code and Grok runtimes |
+| [agentsmd-bash-gate.sh](examples/hooks/agentsmd-bash-gate.sh) | PreToolUse hard block | Blocks Bash in `~/repos/<name>/` unless AGENTS.md for that repo was Read this session |
+| [agentsmd-session-inject.sh](examples/hooks/agentsmd-session-inject.sh) | SessionStart advisory | Injects AGENTS.md into session context when cwd is inside a repo |
+| [three-failure-stop-gate.sh](examples/hooks/three-failure-stop-gate.sh) | PreToolUse advisory block | Blocks 4th `fix(...)` commit in 2 hours without a halted-and-researched attestation |
+| [claim-evidence-gate-dispatch.sh](examples/hooks/claim-evidence-gate-dispatch.sh) | PreToolUse hard block | Cross-platform Gate 4 dispatcher; probes Go binary (two-probe trust check), falls back to bash floor |
+| [claim-evidence-gate.sh](examples/hooks/claim-evidence-gate.sh) | PreToolUse hard block | Bash floor for Gate 4; blocks assertion language and path-cited claims without a session Read |
+| [aof-eval-opportunity-counter.sh](examples/hooks/aof-eval-opportunity-counter.sh) | Multi-event advisory | DPMO counter; POSTs to `eval.opportunities` per tool call; health = row count |
 
 See [§5.3 Rule-to-Hook Coverage](AGENT_FRAMEWORK.md#53-rule-to-hook-coverage) for which rule each hook backs and the full enforced-vs-advisory accounting.
 
 See [examples/hooks/README.md](examples/hooks/README.md) for setup instructions and the breadcrumb pattern.
 
 ### Incident Log
-- **[INCIDENTS.md](INCIDENTS.md)** — 38 sanitized incidents linking real failures to the rules they produced. Month-precision dates.
+- **[INCIDENTS.md](INCIDENTS.md)** — 41 sanitized incidents linking real failures to the rules they produced. Month-precision dates.
 
 ## The Key Insight
 

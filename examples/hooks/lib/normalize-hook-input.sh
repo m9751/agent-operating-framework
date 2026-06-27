@@ -1,25 +1,17 @@
 #!/usr/bin/env bash
-# fail-mode: open
-# blast-radius: advisory
-# =============================================================================
-# normalize-hook-input.sh — Cross-runtime hook payload normalization library
+# normalize-hook-input.sh — Shared hook payload normalization library
 #
 # SOURCE with:
 #   source "$(dirname "${BASH_SOURCE[0]}")/lib/normalize-hook-input.sh" 2>/dev/null || true
 #
-# Problem: Claude Code hooks receive JSON payloads in snake_case with
-# "Bash"/"Edit"/"Write" tool-name literals. Other runtimes (Grok and future
-# agents) emit camelCase payloads with different tool-name literals:
+# Purpose: Claude Code hooks receive JSON payloads in Claude Code's snake_case
+# shape. Other runtimes (Grok, future agents) emit camelCase shapes with
+# different tool-name literals. This library normalizes the payload so every
+# hook that sources it works regardless of which runtime fired it.
 #
-#   Claude Code:  {"tool_name": "Bash",   "tool_input": {...}}
-#   Grok:         {"toolName":  "run_terminal_cmd", "toolInput": {...}}
+# What it normalizes:
 #
-# Without normalization, a hook that checks `tool_name == "Bash"` silently
-# bypasses on Grok — the check never fires, the gate never blocks.
-#
-# What this library normalizes:
-#
-#   Field names (camelCase → snake_case):
+#   Field names:
 #     toolName    → tool_name
 #     toolInput   → tool_input
 #     toolResult  → tool_result
@@ -30,38 +22,53 @@
 #     search_replace     → Edit
 #     create_file        → Write
 #     read_file          → Read
-#     grep_search        → Bash
+#     grep_search        → Bash       (grep is invoked via Bash in CC)
 #     list_dir           → Bash
 #
-# What this library does NOT normalize:
-#   - tool_input field structure (command, file_path, etc.) — hooks handle these
-#   - MCP tool names (mcp__*) — namespaced, no conflicts
+#   tool_input field aliases (Grok Write shape → Claude Code canonical), each with a
+#   scan/execute-divergence CONFLICT guard (both-present-but-differ → fail closed):
+#     tool_input.path     → tool_input.file_path
+#     tool_input.contents → tool_input.content
+#
+# What it does NOT normalize:
+#   - tool_input field structure (command, file_path, etc.) — those are
+#     runtime-specific and each hook handles them already.
+#   - MCP tool names — these are namespaced (mcp__*) and don't conflict.
 #
 # Usage:
 #   1. Source this file near the top of your hook, after breadcrumb-lib.sh.
-#   2. Read raw stdin into a variable (do not consume stdin twice).
+#   2. Read raw stdin into a variable.
 #   3. Call nh_normalize "$RAW_INPUT" to get normalized JSON on stdout.
-#   4. Pass the normalized JSON to your existing parser.
+#   4. Use the normalized JSON with your existing Python parser.
 #
 # Example:
-#   source "$(dirname "${BASH_SOURCE[0]}")/lib/normalize-hook-input.sh" 2>/dev/null || true
+#   source "$SCRIPT_DIR/lib/normalize-hook-input.sh" 2>/dev/null || true
 #   RAW=$(cat)
 #   INPUT=$(nh_normalize "$RAW")
-#   TOOL_NAME=$(echo "$INPUT" | python3 -c "import json,sys; print(json.load(sys.stdin).get('tool_name',''))")
+#   # ... your existing Python parser reads $INPUT ...
 #
-# Fail-open guarantee: if python3 is missing or JSON parse fails, nh_normalize
-# returns the original input unchanged. Every hook that sources this library
-# degrades to Claude Code-only behavior — the pre-normalization status quo.
-# No regression.
-#
-# Library exit semantics: none — this file provides functions only.
+# Exit semantics of this library: none — it provides functions only.
 # The calling hook owns all exit codes.
 #
-# Hook type: library (source, do not execute directly)
-# =============================================================================
-
-# Do NOT set -euo pipefail in a sourced library — it affects the calling hook's
-# errexit behavior. Let the caller control error handling.
+# Fail-open: if python3 is missing or the JSON parse fails, nh_normalize
+# returns the original input unchanged. Hooks degrade to Claude Code-only
+# behavior, which is the pre-normalization status quo — no regression.
+#
+# Design: smokin-os/spec/hooks-memory-skills-design.md §3.2 (Grok shape mismatch)
+#         Track 1.1 done criterion: this file exists + top-offender hooks source it
+#
+# Bash hard rules (smokin-knowledge/bash/AGENTS.md):
+#   Rule 1: set -euo pipefail — applied at the CALLING hook level; this library
+#           intentionally does NOT call set -euo pipefail (sourced files that set
+#           strict mode can change the calling hook's errexit behavior on source
+#           errors — the || true on the source line is the caller's safety valve).
+#   Rule 2: MSYS_NO_PATHCONV not needed (no native Win tools called)
+#   Rule 3: No git pager calls
+#   Rule 4: No state mutations — this library is read-only
+#   Rule 5: No destructive commands
+#
+# Self-allowlist: hooks that source this file should add its basename to their
+# own self-allowlist (if they have one) to prevent self-blocking.
 
 # nh_normalize <json_string>
 #
@@ -74,17 +81,19 @@ nh_normalize() {
     return
   fi
 
+  # Python normalization: rename camelCase fields, remap tool-name literals.
   local result
   result=$(printf '%s' "$raw" | python3 -c '
 import json, sys
 
 TOOL_NAME_MAP = {
-    "run_terminal_cmd": "Bash",
-    "search_replace":   "Edit",
-    "create_file":      "Write",
-    "read_file":        "Read",
-    "grep_search":      "Bash",
-    "list_dir":         "Bash",
+    "run_terminal_cmd":     "Bash",
+    "run_terminal_command": "Bash",
+    "search_replace":       "Edit",
+    "create_file":          "Write",
+    "read_file":            "Read",
+    "grep_search":          "Bash",
+    "list_dir":             "Bash",
 }
 
 FIELD_MAP = {
@@ -94,22 +103,75 @@ FIELD_MAP = {
     "sessionId":  "session_id",
 }
 
+# CONFLICT sentinel (Codex Point A 2026-06-15, 2 HIGH bypass fixes). When a payload
+# carries a field in BOTH shapes (e.g. camelCase toolInput AND snake_case tool_input, or
+# tool_input.path AND tool_input.file_path with DIFFERENT values), normalization cannot
+# pick a winner without risking scan/execute divergence: the gate could scan the clean
+# branch while the runtime writes the secret branch. A security gate must NEVER let the
+# scanned value differ from the executed value, so on conflict we emit a fixed sentinel and
+# the calling SECURITY hook fails CLOSED. Non-security callers that ignore the sentinel get
+# a non-JSON string and degrade safely (their JSON parse fails -> their own fail path).
+CONFLICT = "__NH_CONFLICT__"
+
 try:
     d = json.loads(sys.stdin.read())
 except Exception:
-    sys.exit(0)  # fail-open: caller receives empty, returns original
+    # Not valid JSON — emit empty to signal parse failure; caller fail-opens to raw.
+    sys.exit(0)
 
+if not isinstance(d, dict):
+    # Top-level must be an object envelope; anything else is not a tool call we normalize.
+    sys.exit(0)
+
+# Finding 1 — dual envelope key collision. If any camelCase field AND its snake_case
+# target are both present at the top level, last-write-wins would be attacker-controllable.
+# Fail closed.
+for cc_key, sc_key in FIELD_MAP.items():
+    if cc_key in d and sc_key in d:
+        print(CONFLICT, end="")
+        sys.exit(0)
+
+# Rename camelCase fields to snake_case (only top-level envelope fields).
 normalized = {}
 for k, v in d.items():
-    normalized[FIELD_MAP.get(k, k)] = v
+    mapped_key = FIELD_MAP.get(k, k)
+    normalized[mapped_key] = v
 
+# Remap tool-name literals.
 if "tool_name" in normalized:
     normalized["tool_name"] = TOOL_NAME_MAP.get(normalized["tool_name"], normalized["tool_name"])
+
+# Alias tool_input.path -> file_path (some Grok shapes use "path"). Three cases:
+#   - only path present          -> alias path into file_path (the intended normalization)
+#   - both present, SAME value   -> harmless, leave as-is
+#   - both present, DIFFER       -> Finding 2: scan/execute divergence -> fail closed
+# Non-dict tool_input is left untouched.
+ti = normalized.get("tool_input")
+if isinstance(ti, dict) and "path" in ti:
+    if "file_path" not in ti:
+        ti["file_path"] = ti["path"]
+    elif ti["file_path"] != ti["path"]:
+        print(CONFLICT, end="")
+        sys.exit(0)
+
+# Alias tool_input.contents -> content (some Grok Write shapes use "contents"). Same three cases
+# as path/file_path above:
+#   - only contents present       -> alias contents into content (the intended normalization)
+#   - both present, SAME value    -> harmless, leave as-is
+#   - both present, DIFFER        -> scan/execute divergence -> fail closed (CONFLICT sentinel)
+# Non-dict tool_input is left untouched (ti is re-checked because the path branch may have run).
+if isinstance(ti, dict) and "contents" in ti:
+    if "content" not in ti:
+        ti["content"] = ti["contents"]
+    elif ti["content"] != ti["contents"]:
+        print(CONFLICT, end="")
+        sys.exit(0)
 
 print(json.dumps(normalized), end="")
 ' 2>/dev/null) || result=""
 
   if [ -z "$result" ]; then
+    # Normalization failed — return original input unchanged (fail-open).
     printf '%s' "$raw"
   else
     printf '%s' "$result"
@@ -119,11 +181,7 @@ print(json.dumps(normalized), end="")
 # nh_tool_name <json_string>
 #
 # Convenience: extract the normalized tool_name without a full normalize pass.
-# Useful for quick dispatch checks in PreToolUse hooks.
-#
-# Example:
-#   tool=$(nh_tool_name "$RAW")
-#   [[ "$tool" == "Bash" ]] && echo "bash call"
+# Useful for quick dispatch checks (e.g., "is this a Bash call?").
 nh_tool_name() {
   local raw="${1:-}"
   [ -z "$raw" ] && { printf ''; return; }
