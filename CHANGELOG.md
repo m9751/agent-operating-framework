@@ -4,6 +4,74 @@ All notable changes to this framework follow [Keep a Changelog](https://keepacha
 
 ---
 
+## [1.8] — 2026-06
+
+### Background
+
+v1.7 answered: can you prove hooks work? v1.8 answers: do you ship the hooks that enforce the rules you already have written? Two rule gaps had hooks drafted in the private config but not ported to the public repo: AGENTS.md enforcement (repo governance) and empirical discipline gates (three-failure stop, claim-evidence). Both are now public.
+
+### What v1.8 covers ("AGENTS.md enforcement + empirical enforcement" release)
+
+Six new hook ports, two new guides, one new smoke test, and updated `lib/normalize-hook-input.sh` with dual-shape conflict detection.
+
+### Added
+
+- **`examples/hooks/agentsmd-bash-gate.sh`** — PreToolUse gate for Bash. Blocks commands that touch `~/repos/<name>/` unless AGENTS.md for that repo was Read this session. Complements `read-gate.sh` (which covers Edit/Write) with Bash-side coverage. Port hardening: added `source lib/normalize-hook-input.sh` and fixed the parser to read `tool_input.command` (not `input.command`) for correct Claude Code envelope handling.
+
+- **`examples/hooks/agentsmd-session-inject.sh`** — SessionStart advisory hook. When cwd is inside `~/repos/<name>/`, prints AGENTS.md to stdout so Claude loads it as session context before the first user prompt. Ports directly; no hardening needed.
+
+- **`examples/hooks/three-failure-stop-gate.sh`** — PreToolUse gate for Bash. Blocks the 4th `fix(...)` commit within 2 hours unless the commit body contains `# halted-and-researched: <one-line>`. State stored in `~/.claude/state/three-failure-stop/<repo>__<file>.log`. Production telemetry: 6,262 fires / 13 blocks. Fail-open on repo-resolve failure (advisory by design — false-positives more disruptive than false-negatives for this pattern).
+
+- **`examples/hooks/claim-evidence-gate-dispatch.sh`** — Cross-platform dispatch wrapper for Gate 4. Probes the native Go binary with a two-probe trust check (must allow a clean payload AND block a claim-shaped payload) before trusting it. Falls back to `claim-evidence-gate.sh` if the binary is missing, wrong architecture, or fails either probe. Fail-closed with no runnable gate at all. Telemetry breadcrumb fires at the dispatch layer (single choke point). CEG fire_count>0 on Mac confirmed 2026-06-27 (PR #571).
+
+- **`examples/hooks/claim-evidence-gate.sh`** — Bash floor for Gate 4. Blocks assertion language patterns and explicit path-cited claims without a session Read breadcrumb. Pattern list aligned one-for-one with the Go binary's `assertionPatterns` (softened per ADR 0064 — bare "confirmed"/"verified" removed after 58/59 audit showed false positives). Empty stdin fails closed. Self-exempts via path-allowlist (the file itself is allowlisted to prevent gate self-block during deployment).
+
+- **`examples/hooks/aof-eval-opportunity-counter.sh`** — Fires on PreToolUse, SessionStart, and UserPromptSubmit (three settings.json registrations). POSTs to `eval.opportunities` table for DPMO measurement. **Health signal: `eval.opportunities` row count.** `telemetry.hook_events` fire_count is expected to be 0 for this hook (it does not use `bc_write` / `hook-telemetry-stop`). Port hardening: replaced hardcoded Supabase URL + anon key with `AOF_EVAL_SUPABASE_URL` + `AOF_EVAL_SUPABASE_KEY` env vars; hook fails open if either is unset.
+
+- **`guides/advanced/when-to-write-a-hook.md`** — Decision test for hook vs. rule. Three questions: (1) has the rule been violated with real consequence? (2) can the hook detect the violation mechanically? (3) is the blast radius acceptable? Includes hook type table by blast radius, what belongs in a rule (not a hook), hook anatomy invariants, and a 4-step test matrix before shipping.
+
+- **`guides/advanced/go-hook-dispatch-pattern.md`** — Canonical pattern for shipping Go binary hooks with a bash fallback. Explains the 2026-06-13 incident (Mach-O binary failing open on Win11), the two-probe trust model, build-at-install-time pattern, gitignore for architecture-specific binaries, bash floor alignment requirements, and settings.json registration via dispatch wrapper only.
+
+- **`tests/smoke/hooks/grok-shape-normalize.sh`** — 6-case smoke test for `lib/normalize-hook-input.sh`. Tests: camelCase normalization, snake_case passthrough, dual-shape conflict sentinel (`__NH_CONFLICT__`), empty input, malformed JSON. Gate: all 6 PASS before tagging v1.8.
+
+- **`examples/hooks/lib/normalize-hook-input.sh`** — Updated from v1.7 with dual-shape conflict detection. When a payload carries a field in both camelCase and snake_case shapes, `nh_normalize` now emits `__NH_CONFLICT__` sentinel instead of normalizing. The dispatch wrapper and gate check for this sentinel and fail closed (block) — a dual-shape payload is unevaluable; scanning one branch while the runtime executes the other risks claim bypass.
+
+- **3 new sanitized incidents** in `INCIDENTS.md` (#39, #40, #41).
+
+### Changed
+
+- **`AGENT_FRAMEWORK.md`** — version bump to v1.8. §5.3 matrix extended with 5 new hook rows (AGENTS.md enforcement + empirical gates). Framework structure updated with two new advanced guides. Version history entry added.
+- **`README.md`** — v1.8 references, 41 incidents, 5 new hooks in hook table.
+- **`examples/hooks/README.md`** — 5 new inventory rows (one per new hook, plus counter).
+
+### What is NOT in v1.8 (deferred to v1.9)
+
+- **Go binary for claim-evidence-gate** — the dispatch wrapper + bash floor ship; the public Go source does not. The private Go binary is architecture-specific (Mach-O arm64) and requires build tooling. Public port deferred until a portable build pipeline exists for the AOF repo.
+- **FORGET mechanism** — carried from v1.7. Still the hard prerequisite for Phase D global deploy of the memory system.
+- **`distill-memory.py` regex fix** — resolved in private config (2026-06-27); not a public AOF artifact. Removed from deferred list.
+
+### Release checklist
+
+- [x] Port `agentsmd-bash-gate.sh` (with normalize-hook-input + tool_input.command fix)
+- [x] Port `agentsmd-session-inject.sh`
+- [x] Port `three-failure-stop-gate.sh`
+- [x] Port `claim-evidence-gate-dispatch.sh`
+- [x] Port `claim-evidence-gate.sh` (bash floor)
+- [x] Port `aof-eval-opportunity-counter.sh` (with secret scrub)
+- [x] Write `guides/advanced/when-to-write-a-hook.md`
+- [x] Write `guides/advanced/go-hook-dispatch-pattern.md`
+- [x] Write `tests/smoke/hooks/grok-shape-normalize.sh`
+- [x] Update `lib/normalize-hook-input.sh` (dual-shape conflict)
+- [x] Smoke test PASS (6/6)
+- [x] Edit `AGENT_FRAMEWORK.md` v1.7 → v1.8 + §5.3 matrix + structure
+- [x] Edit `README.md`
+- [x] Edit `examples/hooks/README.md`
+- [x] Insert CHANGELOG v1.8
+- [ ] `git tag v1.8 && git push --tags`
+- [ ] Create GitHub release
+
+---
+
 ## [1.7] — 2026-06
 
 ### Background

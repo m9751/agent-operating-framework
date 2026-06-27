@@ -1,4 +1,4 @@
-# Agent Operating Framework v1.7
+# Agent Operating Framework v1.8
 
 > A behavioral operating system for AI coding agents — born from production failures, not theory.
 >
@@ -304,7 +304,7 @@ See [`guides/enforcement-architecture.md`](guides/enforcement-architecture.md) f
 
 ### 5.3 Rule-to-Hook Coverage
 
-The escalation ladder above (memory → rule → hook) is aspirational — not every rule has a hook backing it, and the framework does not pretend otherwise. The matrix below is the accurate accounting of what ships in v1.6:
+The escalation ladder above (memory → rule → hook) is aspirational — not every rule has a hook backing it, and the framework does not pretend otherwise. The matrix below is the accurate accounting of what ships in v1.8:
 
 | Rule | Hook | Fail mode | Blast radius | Coverage |
 |---|---|---|---|---|
@@ -323,6 +323,16 @@ The escalation ladder above (memory → rule → hook) is aspirational — not e
 Five of six rules ship with hook backing as of v1.5. The single remaining advisory rule is `no-local-infrastructure` — advisory by design, not by gap. It is a decision framework that routes to a hosting recommendation per context (durability / recovery / trust boundary / operator availability), not a single invariant a hook can check. Adoption notes:
 - If you adopt the framework expecting all rules to be system-enforced, this matrix is the reality check.
 - If you need stronger guarantees on the advisory rules, write your own `PreToolUse` hooks against your environment's specifics — the framework's hooks are reference implementations, not exhaustive coverage.
+
+**AGENTS.md enforcement hooks** (v1.8 — repo governance):
+- [`agentsmd-bash-gate.sh`](examples/hooks/agentsmd-bash-gate.sh) — blocks Bash commands that touch `~/repos/<name>/` unless AGENTS.md for that repo was Read this session *(fail-mode: closed, blast-radius: destructive)*
+- [`agentsmd-session-inject.sh`](examples/hooks/agentsmd-session-inject.sh) — SessionStart hook; when cwd is inside a repo, prints AGENTS.md to stdout as session context *(fail-mode: open, blast-radius: advisory)*
+
+**Empirical enforcement hooks** (v1.8 — claim and discipline gates):
+- [`three-failure-stop-gate.sh`](examples/hooks/three-failure-stop-gate.sh) — blocks the 4th `fix(...)` commit in 2 hours unless a `# halted-and-researched:` attestation is present; 6,262 fires / 13 blocks in production *(fail-mode: advisory — fail-open on repo-resolve failure)*
+- [`claim-evidence-gate-dispatch.sh`](examples/hooks/claim-evidence-gate-dispatch.sh) — cross-platform front door for Gate 4; probes native Go binary (two-probe trust check) before falling back to bash floor; live telemetry Mac 2026-06-27 PR #571 *(fail-mode: closed, blast-radius: security)*
+- [`claim-evidence-gate.sh`](examples/hooks/claim-evidence-gate.sh) — bash floor for Gate 4; blocks assertion language and path-cited claims without a session Read breadcrumb *(fail-mode: closed, blast-radius: security)*
+- [`aof-eval-opportunity-counter.sh`](examples/hooks/aof-eval-opportunity-counter.sh) — PostToolUse/SessionStart/UserPromptSubmit hook; POSTs to `eval.opportunities` for DPMO measurement; health signal = `eval.opportunities` rows (NOT `hook_events` fire_count); requires `AOF_EVAL_SUPABASE_URL` + `AOF_EVAL_SUPABASE_KEY` env vars *(fail-mode: open, blast-radius: telemetry)*
 
 **Meta-hooks** (not bound to a single rule):
 - [`deprecated-field-gate.sh`](examples/hooks/deprecated-field-gate.sh) — template for blocking writes that reference deprecated DB columns or API fields *(fail-mode: closed, blast-radius: destructive)*
@@ -371,7 +381,7 @@ See [`guides/rule-consolidation.md`](guides/rule-consolidation.md) for a worked 
 
 ---
 
-## Framework Structure (v1.5)
+## Framework Structure (v1.8)
 
 ```
 AGENT_FRAMEWORK.md          ← This file. The complete behavioral spec.
@@ -391,6 +401,8 @@ guides/
     hook-audit-methodology.md    ← 4-track audit pattern (v1.6)
     silent-failure-discipline.md ← Every fail-open path must log (v1.7)
     agents-md-standard.md   ← Three-level repo governance contract (v1.7)
+    when-to-write-a-hook.md ← Decision test for hook vs. rule (v1.8)
+    go-hook-dispatch-pattern.md  ← Go binary + bash floor dispatch pattern (v1.8)
 examples/
   claude-code-rules/        ← Sample rule files for Claude Code
   hooks/                    ← Reference hook implementations (Claude Code-specific)
@@ -406,6 +418,7 @@ Full per-release notes live in [CHANGELOG.md](CHANGELOG.md). The framework file 
 
 Headline changes from recent versions:
 
+- **v1.8** — AGENTS.md enforcement + empirical enforcement release. 6 new hooks: `agentsmd-bash-gate.sh`, `agentsmd-session-inject.sh`, `three-failure-stop-gate.sh`, `claim-evidence-gate-dispatch.sh`, `claim-evidence-gate.sh`, `aof-eval-opportunity-counter.sh`. 2 new guides: `when-to-write-a-hook.md` and `go-hook-dispatch-pattern.md`. New smoke test: `tests/smoke/hooks/grok-shape-normalize.sh`. Updated `lib/normalize-hook-input.sh` with dual-shape conflict detection. §5.3 matrix extended with 5 new hook rows. CEG telemetry live Mac PR #571.
 - **v1.7** — Provable hooks release: `startup-gate.sh` (SessionStart governance check), `normalize-hook-input.sh` (cross-runtime payload normalization), `hook-telemetry-stop.sh` (session-end telemetry). New guides: `silent-failure-discipline.md` (ADR 0012 — every fail-open path must log) and `agents-md-standard.md` (three-level repo governance contract). Incidents #36–#38.
 - **v1.6** — Hook operations layer: `breadcrumb-lib.sh` shared session library, `CLAUDE_HOOKS_SAFE_MODE` emergency bypass pattern, `# fail-mode: silent-skip` taxonomy tier for watcher-class hooks. New guides: `hook-operations.md` (the three operational questions) and `hook-audit-methodology.md` (4-track audit pattern). §5.2 updated with bypass + breadcrumb protocol as standard requirements. AOF self-eval harness (`b3d8451`) on main.
 - **v1.5** — `secure-config-gate.sh`, `focus-breadcrumb.sh` + `focus-confirmation-gate.sh`, `dormant-code-gate.sh`. §5.3 coverage moves from 3-of-6 enforced to **5-of-6 enforced**. `no-local-infrastructure` rewritten as a hosting decision framework (advisory by design).
