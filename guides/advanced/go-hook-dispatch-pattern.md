@@ -116,3 +116,21 @@ Register the dispatch wrapper three ways if your hook covers multiple events:
 ```
 
 Never register the binary directly. Never register the bash floor directly. Always register the dispatch wrapper.
+
+---
+
+## Fleet Verification
+
+Alignment between the bash floor and Go binary requires two ongoing checks:
+
+**1. Parity smoke** — run after every `make install` / `install.bat` to prove the bash floor and Go binary agree on all known cases. The private `claude-config` fork ships this at `tests/smoke/hooks/claim-evidence/parity-smoke.sh`. If you maintain your own fork, build a comparable test from your gate's `patterns_test.go` cases (the Go test file is the canonical source of truth for expected allow/block behavior).
+
+**2. Fallback rate telemetry** — the dispatch wrapper should log `gate-path-go` or `gate-path-bash` on every invocation (via `bc_append` or equivalent). Query this log periodically:
+
+```bash
+grep 'gate-path-' ~/.claude/migration-breadcrumbs/.errors.log | tail -20
+```
+
+If `gate-path-bash` exceeds ~1% over a 7-day window, the Go binary is not loading reliably on one or more machines — investigate before porting bash exclusions. Telemetry is the decision gate, not intuition.
+
+**Kill trigger:** if bash fallback rate stays elevated after fixing the binary, port the Go binary's `narrativeExclusions` (fence, blockquote, narrative-context skips) to the bash floor. Until then, the 4 known divergences are accepted (blockquote content, past-event descriptions, "described as", narrative learning-log lines).
